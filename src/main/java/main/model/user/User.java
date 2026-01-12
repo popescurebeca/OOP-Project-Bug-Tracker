@@ -38,39 +38,37 @@ public abstract class User {
     public User(final String username, final String email, final String role,
                 final Seniority seniority, final Expertise expertiseArea) {
         this(username, email, role);
-        // this.seniority = seniority;
-        // this.expertiseArea = expertiseArea;
     }
 
-    public String getUsername() {
+    public final String getUsername() {
         return username;
     }
 
-    public void setUsername(final String username) {
+    public final void setUsername(final String username) {
         this.username = username;
     }
 
-    public String getEmail() {
+    public final String getEmail() {
         return email;
     }
 
-    public void setEmail(final String email) {
+    public final void setEmail(final String email) {
         this.email = email;
     }
 
-    public String getRole() {
+    public final String getRole() {
         return role;
     }
 
-    public void setRole(final String role) {
+    public final void setRole(final String role) {
         this.role = role;
     }
 
-    public double getPerformanceScore() {
+    public final double getPerformanceScore() {
         return performanceScore;
     }
 
-    public void setPerformanceScore(final double performanceScore) {
+    public final void setPerformanceScore(final double performanceScore) {
         this.performanceScore = performanceScore;
     }
 }

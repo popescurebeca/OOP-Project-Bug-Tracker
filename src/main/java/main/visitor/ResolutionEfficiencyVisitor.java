@@ -17,7 +17,17 @@ import java.util.Map;
 /**
  * Visitor implementation to calculate Resolution Efficiency metrics.
  */
-public class ResolutionEfficiencyVisitor implements Visitor {
+public final class ResolutionEfficiencyVisitor implements Visitor {
+    // --- Constants for Calculations ---
+    private static final double BUG_SCORE_MULTIPLIER = 10.0;
+    private static final double PERCENTAGE_MULTIPLIER = 100.0;
+    private static final double ROUNDING_FACTOR = 100.0;
+
+    // --- Constants for Max Scores ---
+    private static final double BUG_MAX_SCORE = 70.0;
+    private static final double FEATURE_MAX_SCORE = 20.0;
+    private static final double UI_MAX_SCORE = 20.0;
+
     private final Map<String, Double> totalEfficiency = new HashMap<>();
     private final Map<String, Integer> countByType = new HashMap<>();
 
@@ -57,8 +67,8 @@ public class ResolutionEfficiencyVisitor implements Visitor {
         int freq = Frequency.valueOf(bug.getFrequency().toUpperCase()).getValue();
         int sev = Severity.valueOf(bug.getSeverity().toUpperCase()).getValue();
 
-        double score = (double) (freq + sev) * 10.0 / days;
-        double finalEff = (score * 100.0) / 70.0;
+        double score = (double) (freq + sev) * BUG_SCORE_MULTIPLIER / days;
+        double finalEff = (score * PERCENTAGE_MULTIPLIER) / BUG_MAX_SCORE;
 
         accumulate("BUG", finalEff);
     }
@@ -73,7 +83,7 @@ public class ResolutionEfficiencyVisitor implements Visitor {
         int demand = CustomerDemand.valueOf(fr.getCustomerDemand().toUpperCase()).getValue();
 
         double score = (double) (bv + demand) / days;
-        double finalEff = (score * 100.0) / 20.0;
+        double finalEff = (score * PERCENTAGE_MULTIPLIER) / FEATURE_MAX_SCORE;
 
         accumulate("FEATURE_REQUEST", finalEff);
     }
@@ -88,7 +98,7 @@ public class ResolutionEfficiencyVisitor implements Visitor {
         int usability = ui.getUsabilityScore();
 
         double score = (double) (usability + bv) / days;
-        double finalEff = (score * 100.0) / 20.0;
+        double finalEff = (score * PERCENTAGE_MULTIPLIER) / UI_MAX_SCORE;
 
         accumulate("UI_FEEDBACK", finalEff);
     }
@@ -112,9 +122,7 @@ public class ResolutionEfficiencyVisitor implements Visitor {
 
         double avg = totalEfficiency.get(type) / count;
         // Round to 2 decimal places (example: 35.714 -> 35.71)
-        // Checking ref: 42.857 -> 42.86 (Round).
-        // Let's try ROUND:
-        return Math.round(avg * 100.0) / 100.0;
+        return Math.round(avg * ROUNDING_FACTOR) / ROUNDING_FACTOR;
     }
 
     /**

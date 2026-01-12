@@ -12,7 +12,7 @@ import java.time.temporal.ChronoUnit;
 /**
  * Visitor implementation to collect performance statistics from tickets.
  */
-public class PerformanceStatsVisitor implements Visitor {
+public final class PerformanceStatsVisitor implements Visitor {
     // Counters for types (needed for Junior - Diversity)
     private int bugCount = 0;
     private int featureCount = 0;
@@ -65,22 +65,47 @@ public class PerformanceStatsVisitor implements Visitor {
 
     // --- GETTERS ---
 
+    /**
+     * Gets the count of bug tickets visited.
+     *
+     * @return The number of bug tickets.
+     */
     public int getBugCount() {
         return bugCount;
     }
 
+    /**
+     * Gets the count of feature request tickets visited.
+     *
+     * @return The number of feature request tickets.
+     */
     public int getFeatureCount() {
         return featureCount;
     }
 
+    /**
+     * Gets the count of UI feedback tickets visited.
+     *
+     * @return The number of UI feedback tickets.
+     */
     public int getUiCount() {
         return uiCount;
     }
 
+    /**
+     * Gets the count of tickets with HIGH or CRITICAL priority.
+     *
+     * @return The high priority ticket count.
+     */
     public int getHighPriorityCount() {
         return highPriorityCount;
     }
 
+    /**
+     * Gets the total number of closed tickets processed.
+     *
+     * @return The closed tickets count.
+     */
     public int getClosedTicketsCount() {
         return closedTicketsCount;
     }

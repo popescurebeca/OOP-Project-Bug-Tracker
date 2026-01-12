@@ -5,7 +5,7 @@ import main.model.user.enums.UserRoles;
 /**
  * Represents a Reporter user in the system.
  */
-public class Reporter extends User {
+public final class Reporter extends User {
 
     /**
      * Constructor for Reporter.

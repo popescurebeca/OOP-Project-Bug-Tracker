@@ -10,7 +10,27 @@ import java.util.Map;
 /**
  * Visitor implementation to calculate Ticket Risk metrics.
  */
-public class TicketRiskVisitor implements Visitor {
+public final class TicketRiskVisitor implements Visitor {
+    // --- Constants for Calculations ---
+    private static final double PERCENTAGE_MULTIPLIER = 100.0;
+    private static final double BUG_MAX_SCORE = 12.0;
+    private static final double FEATURE_MAX_SCORE = 20.0;
+    private static final double UI_MAX_SCORE = 100.0;
+    private static final int UI_BASE_FACTOR = 11;
+
+    // --- Constants for Risk Thresholds ---
+    private static final double LOW_RISK_THRESHOLD = 25.0;
+    private static final double MODERATE_RISK_THRESHOLD = 50.0;
+    private static final double SIGNIFICANT_RISK_THRESHOLD = 75.0;
+
+    // --- Constants for Values ---
+    private static final int VAL_1 = 1;
+    private static final int VAL_2 = 2;
+    private static final int VAL_3 = 3;
+    private static final int VAL_4 = 4;
+    private static final int VAL_6 = 6;
+    private static final int VAL_10 = 10;
+
     // Store sum of risks and count of tickets for average
     private final Map<String, Double> totalRiskByType = new HashMap<>();
     private final Map<String, Integer> countByType = new HashMap<>();
@@ -38,7 +58,7 @@ public class TicketRiskVisitor implements Visitor {
         int severity = getSeverityValue(bug.getSeverity());
 
         double rawRisk = frequency * severity;
-        double finalRisk = (rawRisk * 100.0) / 12.0;
+        double finalRisk = (rawRisk * PERCENTAGE_MULTIPLIER) / BUG_MAX_SCORE;
 
         accumulate("BUG", finalRisk);
     }
@@ -52,7 +72,7 @@ public class TicketRiskVisitor implements Visitor {
         int demand = getCustomerDemandValue(fr.getCustomerDemand());
 
         double rawRisk = businessValue + demand;
-        double finalRisk = (rawRisk * 100.0) / 20.0;
+        double finalRisk = (rawRisk * PERCENTAGE_MULTIPLIER) / FEATURE_MAX_SCORE;
 
         accumulate("FEATURE_REQUEST", finalRisk);
     }
@@ -65,8 +85,8 @@ public class TicketRiskVisitor implements Visitor {
         int businessValue = getBusinessValue(ui.getBusinessValue());
         int usability = ui.getUsabilityScore();
 
-        double rawRisk = (11 - usability) * businessValue;
-        double finalRisk = (rawRisk * 100.0) / 100.0;
+        double rawRisk = (UI_BASE_FACTOR - usability) * businessValue;
+        double finalRisk = (rawRisk * PERCENTAGE_MULTIPLIER) / UI_MAX_SCORE;
 
         accumulate("UI_FEEDBACK", finalRisk);
     }
@@ -89,16 +109,14 @@ public class TicketRiskVisitor implements Visitor {
         }
 
         double avgRisk = totalRiskByType.get(type) / count;
-        // Round for safety, although intervals are wide
-        // avgRisk = Math.round(avgRisk * 100.0) / 100.0;
 
-        if (avgRisk < 25) {
+        if (avgRisk < LOW_RISK_THRESHOLD) {
             return "NEGLIGIBLE";
         }
-        if (avgRisk < 50) {
+        if (avgRisk < MODERATE_RISK_THRESHOLD) {
             return "MODERATE";
         }
-        if (avgRisk < 75) {
+        if (avgRisk < SIGNIFICANT_RISK_THRESHOLD) {
             return "SIGNIFICANT";
         }
         return "MAJOR";
@@ -114,16 +132,16 @@ public class TicketRiskVisitor implements Visitor {
         return countByType.getOrDefault(type, 0);
     }
 
-    // --- HELPER METHODS FOR VALUES (If Enums with .getValue() are not implemented) ---
+    // --- HELPER METHODS FOR VALUES ---
 
     private int getSeverityValue(final String s) {
         if (s == null) {
             return 1;
         }
         return switch (s.toUpperCase()) {
-            case "MINOR" -> 1;
-            case "MODERATE" -> 2;
-            case "SEVERE" -> 3;
+            case "MINOR" -> VAL_1;
+            case "MODERATE" -> VAL_2;
+            case "SEVERE" -> VAL_3;
             default -> 1;
         };
     }
@@ -133,10 +151,10 @@ public class TicketRiskVisitor implements Visitor {
             return 1;
         }
         return switch (f.toUpperCase()) {
-            case "RARE" -> 1;
-            case "OCCASIONAL" -> 2;
-            case "FREQUENT" -> 3;
-            case "ALWAYS" -> 4;
+            case "RARE" -> VAL_1;
+            case "OCCASIONAL" -> VAL_2;
+            case "FREQUENT" -> VAL_3;
+            case "ALWAYS" -> VAL_4;
             default -> 1;
         };
     }
@@ -146,10 +164,10 @@ public class TicketRiskVisitor implements Visitor {
             return 1;
         }
         return switch (bv.toUpperCase()) {
-            case "S" -> 1;
-            case "M" -> 3;
-            case "L" -> 6;
-            case "XL" -> 10;
+            case "S" -> VAL_1;
+            case "M" -> VAL_3;
+            case "L" -> VAL_6;
+            case "XL" -> VAL_10;
             default -> 1;
         };
     }
@@ -159,10 +177,10 @@ public class TicketRiskVisitor implements Visitor {
             return 1;
         }
         return switch (cd.toUpperCase()) {
-            case "LOW" -> 1;
-            case "MEDIUM" -> 3;
-            case "HIGH" -> 6;
-            case "VERY_HIGH" -> 10;
+            case "LOW" -> VAL_1;
+            case "MEDIUM" -> VAL_3;
+            case "HIGH" -> VAL_6;
+            case "VERY_HIGH" -> VAL_10;
             default -> 1;
         };
     }

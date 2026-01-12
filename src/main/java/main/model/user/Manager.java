@@ -9,7 +9,7 @@ import java.util.List;
 /**
  * Represents a Manager user in the system.
  */
-public class Manager extends User {
+public final class Manager extends User {
     private LocalDate hireDate;
     private List<String> subordinates; // List of usernames
 

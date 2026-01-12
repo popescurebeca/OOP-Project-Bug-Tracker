@@ -11,7 +11,7 @@ import java.util.List;
 /**
  * Represents a Developer user in the system.
  */
-public class Developer extends User {
+public final class Developer extends User {
 
     private LocalDate hireDate;
     private Expertise expertise; // FRONTEND, BACKEND, etc.
