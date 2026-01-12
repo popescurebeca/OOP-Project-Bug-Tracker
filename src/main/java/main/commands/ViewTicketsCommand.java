@@ -5,10 +5,12 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import main.commands.Command;
 import main.database.Database;
+import main.model.Milestone;
 import main.model.ticket.Ticket;
 import main.model.user.User;
 import main.utils.InputData;
 
+import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -24,6 +26,12 @@ public class ViewTicketsCommand implements Command {
     public void execute(List<ObjectNode> outputs) {
         Database db = Database.getInstance();
         ObjectMapper mapper = new ObjectMapper();
+
+        LocalDate currentDay = LocalDate.parse(data.getTimestamp());
+
+        for (Milestone m : db.getMilestones()) {
+            m.applyRules(db, currentDay);
+        }
 
         // 1. Verificare User (pentru siguranță)
         User user = db.findUserByUsername(data.getUsername());
@@ -48,12 +56,31 @@ public class ViewTicketsCommand implements Command {
         String role = String.valueOf(user.getRole()).toUpperCase();
 
         if (role.equals("REPORTER")) {
-            // Reporterul vede DOAR tichetele lui
+            // Reporterul vede doar tichetele lui
             filteredTickets = allTickets.stream()
                     .filter(t -> t.getReportedBy().equals(user.getUsername()))
                     .collect(Collectors.toList());
+
+        } else if (role.equals("DEVELOPER") || role.equals("EMPLOYEE")) {
+            filteredTickets = allTickets.stream()
+                    .filter(t -> {
+                        // Condiția 1: Trebuie să fie OPEN
+                        if (!"OPEN".equals(t.getStatus())) {
+                            return false;
+                        }
+
+                        // Condiția 2: Acces la Milestone
+                        Milestone m = db.findMilestoneByTicketId(t.getId());
+                        if (m != null) {
+                            return m.getAssignedDevs().contains(user.getUsername());
+                        }
+
+                        // Dacă nu are milestone, e vizibil
+                        return true;
+                    })
+                    .collect(Collectors.toList());
         } else {
-            // Managerii și Developerii văd tot
+            // MANAGERII văd tot
             filteredTickets = allTickets;
         }
 
@@ -78,7 +105,7 @@ public class ViewTicketsCommand implements Command {
             ticketNode.put("title", t.getTitle());
 
             // Mapare manuală: în clasă e 'priority', în JSON vrei 'businessPriority'
-            ticketNode.put("businessPriority", t.getPriority());
+            ticketNode.put("businessPriority", t.getPriority().name());
 
             ticketNode.put("status", t.getStatus());
             ticketNode.put("createdAt", t.getCreatedAt());
@@ -91,11 +118,14 @@ public class ViewTicketsCommand implements Command {
 
             // Gestionarea listei de comentarii
             ArrayNode commentsArray = mapper.createArrayNode();
-            if (t.getComments() != null) {
-                for (String comm : t.getComments()) {
-                    commentsArray.add(comm);
-                }
+            for (Ticket.Comment c : t.getComments()) {
+                ObjectNode commentNode = mapper.createObjectNode();
+                commentNode.put("author", c.getAuthor());
+                commentNode.put("content", c.getContent());
+                commentNode.put("createdAt", c.getCreatedAt());
+                commentsArray.add(commentNode);
             }
+            ticketNode.set("comments", commentsArray);
             ticketNode.set("comments", commentsArray);
 
             // Adăugăm tichetul în lista mare

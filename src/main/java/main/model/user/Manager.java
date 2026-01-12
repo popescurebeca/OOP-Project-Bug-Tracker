@@ -6,14 +6,42 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
-public class Manager extends User{
+/**
+ * Represents a Manager user in the system.
+ */
+public class Manager extends User {
     private LocalDate hireDate;
-    private List<String> subordinates; // Lista de username-uri
+    private List<String> subordinates; // List of usernames
 
-    public Manager(String username, String email, LocalDate hireDate, List<String> subordinates) {
+    /**
+     * Constructor for Manager.
+     *
+     * @param username     The username of the manager.
+     * @param email        The email of the manager.
+     * @param hireDate     The date the manager was hired.
+     * @param subordinates The list of subordinate usernames.
+     */
+    public Manager(final String username, final String email, final LocalDate hireDate,
+                   final List<String> subordinates) {
         super(username, email, String.valueOf(UserRoles.MANAGER));
         this.hireDate = hireDate;
-        // Dacă lista e null în JSON, inițializăm una goală
+        // If list is null in JSON, initialize an empty one
         this.subordinates = subordinates != null ? subordinates : new ArrayList<>();
+    }
+
+    public List<String> getSubordinates() {
+        return subordinates;
+    }
+
+    public void setSubordinates(final List<String> subordinates) {
+        this.subordinates = subordinates;
+    }
+
+    public LocalDate getHireDate() {
+        return hireDate;
+    }
+
+    public void setHireDate(final LocalDate hireDate) {
+        this.hireDate = hireDate;
     }
 }

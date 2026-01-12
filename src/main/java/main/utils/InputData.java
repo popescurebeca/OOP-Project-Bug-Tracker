@@ -2,6 +2,7 @@ package main.utils;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import main.model.Priority;
 import main.model.user.enums.Expertise;
 import main.model.user.enums.Seniority;
 
@@ -9,35 +10,46 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Data Transfer Object (DTO) for handling input data from JSON files.
+ * It maps fields for commands, users, tickets, and milestones.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class InputData {
-    // --- Câmpuri Comune (Rădăcină JSON) ---
+
+    // --- Common Fields (JSON Root) ---
     private String command;
     private String username;
     private String timestamp;
 
-    // --- Câmpuri User (users.json) ---
+    // --- User Fields (users.json) ---
     private String email;
     private String role;
     private String userType;
     private LocalDate hireDate;
     private List<String> subordinates;
     private Seniority seniority;
+
+    @JsonProperty("expertiseArea")
     private Expertise expertiseArea;
 
-    // --- Câmpuri Ticket & Milestone (Din "params") ---
-    private String type;         // BUG, FEATURE_REQUEST, etc.
+    // --- Ticket & Milestone Fields (From "params" or root) ---
+    private String name;
+    private String type;
+
+    @JsonProperty("ticketID")
     private int ticketId;
+
     private String title;
     private String description;
     private String status;
-    private String priority;     // Mapăm "businessPriority" aici
+    private Priority priority;     // Maps "businessPriority"
     private String severity;
     private String reportedBy;
     private String milestoneName;
     private String dueDate;
 
-    // --- Câmpurile care lipseau și provocau erori ---
+    // --- Specific Fields for Ticket Details ---
     private String expectedBehavior;
     private String actualBehavior;
     private String frequency;
@@ -45,110 +57,368 @@ public class InputData {
     private String businessValue;
     private String customerDemand;
     private int usabilityScore;
-    private int errorCode; // Adăugat pentru completitudine
-    private String environment; // Adăugat (apare în JSON-ul de BUG)
+    private int errorCode;
+    private String environment;
+
+    // --- Milestone Specifics ---
+    private List<Integer> tickets;
+    private List<String> blockingFor;
+    private List<String> assignedDevs;
+
+    // --- Comment Specifics ---
+    private String comment;
+
+    // --- Filters for Search ---
+    private Map<String, Object> filters;
 
     /**
-     * --- METODA MAGICĂ UNPACK ---
-     * Jackson o apelează automat când găsește "params".
+     * Unpacks parameters from the "params" nested object in JSON.
+     * This allows flat mapping of fields even if they are nested under "params".
+     *
+     * @param params The map of parameters.
      */
     @JsonProperty("params")
-    private void unpackNested(Map<String, Object> params) {
-        if (params == null) return;
-
-        // 1. Extragem datele comune
-        this.type = (String) params.get("type");
-        this.title = (String) params.get("title");
-        this.description = (String) params.get("description");
-        this.status = (String) params.get("status");
-
-        // 2. Mapare Priority
-        if (params.containsKey("businessPriority")) {
-            this.priority = (String) params.get("businessPriority");
-        } else {
-            this.priority = (String) params.get("priority");
+    private void unpackNested(final Map<String, Object> params) {
+        if (params == null) {
+            return;
         }
-
-        // 3. Extragem câmpurile specifice
-        this.severity = (String) params.get("severity");
-        this.reportedBy = (String) params.get("reportedBy");
-
-        this.expectedBehavior = (String) params.get("expectedBehavior");
-        this.actualBehavior = (String) params.get("actualBehavior");
-        this.frequency = (String) params.get("frequency");
-        this.milestoneName = (String) params.get("milestoneName");
-        this.dueDate = (String) params.get("dueDate");
-        this.uiElementId = (String) params.get("uiElementId");
-        this.businessValue = (String) params.get("businessValue");
-        this.customerDemand = (String) params.get("customerDemand");
-        this.environment = (String) params.get("environment");
-
-        // 4. Tratare numere (Integer) - cast sigur
-        if (params.get("usabilityScore") != null) {
+        if (params.containsKey("title")) {
+            this.title = (String) params.get("title");
+        }
+        if (params.containsKey("description")) {
+            this.description = (String) params.get("description");
+        }
+        if (params.containsKey("type")) {
+            this.type = (String) params.get("type");
+        }
+        if (params.containsKey("businessPriority")) {
+            String pObj = (String) params.get("businessPriority");
+            if (pObj != null) {
+                this.priority = Priority.valueOf(pObj);
+            }
+        }
+        if (params.containsKey("frequency")) {
+            this.frequency = (String) params.get("frequency");
+        }
+        if (params.containsKey("severity")) {
+            this.severity = (String) params.get("severity");
+        }
+        if (params.containsKey("reportedBy")) {
+            this.reportedBy = (String) params.get("reportedBy");
+        }
+        if (params.containsKey("expertiseArea")) {
+            String expStr = (String) params.get("expertiseArea");
+            if (expStr != null) {
+                this.expertiseArea = Expertise.valueOf(expStr);
+            }
+        }
+        if (params.containsKey("expectedBehavior")) {
+            this.expectedBehavior = (String) params.get("expectedBehavior");
+        }
+        if (params.containsKey("actualBehavior")) {
+            this.actualBehavior = (String) params.get("actualBehavior");
+        }
+        if (params.containsKey("businessValue")) {
+            this.businessValue = (String) params.get("businessValue");
+        }
+        if (params.containsKey("customerDemand")) {
+            this.customerDemand = (String) params.get("customerDemand");
+        }
+        if (params.containsKey("usabilityScore")) {
             this.usabilityScore = (Integer) params.get("usabilityScore");
         }
-
-        if (params.get("errorCode") != null) {
+        if (params.containsKey("environment")) {
+            this.environment = (String) params.get("environment");
+        }
+        if (params.containsKey("errorCode")) {
             this.errorCode = (Integer) params.get("errorCode");
         }
-
-        // Dacă ticketId vine în params (uneori vine la AssignTicket)
-        if (params.get("ticketId") != null) {
-            this.ticketId = (Integer) params.get("ticketId");
+        if (params.containsKey("uiElementId")) {
+            this.uiElementId = (String) params.get("uiElementId");
         }
     }
 
-    // --- GETTERS & SETTERS (Obligatorii ca să poți folosi datele în comenzi) ---
+    // --- GETTERS AND SETTERS ---
 
-    // 1. Comune
-    public String getCommand() { return command; }
-    public void setCommand(String command) { this.command = command; }
-    public String getUsername() { return username; }
-    public void setUsername(String username) { this.username = username; }
-    public String getTimestamp() { return timestamp; }
-    public void setTimestamp(String timestamp) { this.timestamp = timestamp; }
+    public String getCommand() {
+        return command;
+    }
 
-    // 2. Useri
-    public String getEmail() { return email; }
-    public void setEmail(String email) { this.email = email; }
-    public String getRole() { return role; }
-    public void setRole(String role) { this.role = role; }
-    public String getUserType() { return userType; }
-    public void setUserType(String userType) { this.userType = userType; }
-    public LocalDate getHireDate() { return hireDate; }
-    public void setHireDate(LocalDate hireDate) { this.hireDate = hireDate; }
-    public List<String> getSubordinates() { return subordinates; }
-    public void setSubordinates(List<String> subordinates) { this.subordinates = subordinates; }
-    public Seniority getSeniority() { return seniority; }
-    public void setSeniority(Seniority seniority) { this.seniority = seniority; }
-    public Expertise getExpertiseArea() { return expertiseArea; }
-    public void setExpertiseArea(Expertise expertiseArea) { this.expertiseArea = expertiseArea; }
+    public void setCommand(final String command) {
+        this.command = command;
+    }
 
-    // 3. Tichete & Params
-    public String getType() { return type; }
-    public int getTicketId() { return ticketId; }
-    public void setTicketId(int ticketId) { this.ticketId = ticketId; } // Setter necesar pt comenzi
-    public String getTitle() { return title; }
-    public String getDescription() { return description; }
-    public String getStatus() { return status; }
-    public String getPriority() { return priority; }
-    public void setPriority(String priority) { this.priority = priority; }
-    public String getSeverity() { return severity; }
-    public String getReportedBy() { return reportedBy; }
+    public String getUsername() {
+        return username;
+    }
 
-    public String getMilestoneName() { return milestoneName; }
-    public String getDueDate() { return dueDate; }
+    public void setUsername(final String username) {
+        this.username = username;
+    }
 
-    // Gettere pentru câmpurile noi (ca să le poți folosi în ReportTicketCommand)
-    public String getExpectedBehavior() { return expectedBehavior; }
-    public String getActualBehavior() { return actualBehavior; }
-    public String getFrequency() { return frequency; }
-    public String getUiElementId() { return uiElementId; }
-    public String getBusinessValue() { return businessValue; }
-    public String getCustomerDemand() { return customerDemand; }
-    public int getUsabilityScore() { return usabilityScore; }
-    public int getErrorCode() { return errorCode; }
-    public String getEnvironment() { return environment; }
+    public String getTimestamp() {
+        return timestamp;
+    }
 
+    public void setTimestamp(final String timestamp) {
+        this.timestamp = timestamp;
+    }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(final String email) {
+        this.email = email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(final String role) {
+        this.role = role;
+    }
+
+    public String getUserType() {
+        return userType;
+    }
+
+    public void setUserType(final String userType) {
+        this.userType = userType;
+    }
+
+    public LocalDate getHireDate() {
+        return hireDate;
+    }
+
+    public void setHireDate(final LocalDate hireDate) {
+        this.hireDate = hireDate;
+    }
+
+    public List<String> getSubordinates() {
+        return subordinates;
+    }
+
+    public void setSubordinates(final List<String> subordinates) {
+        this.subordinates = subordinates;
+    }
+
+    public Seniority getSeniority() {
+        return seniority;
+    }
+
+    public void setSeniority(final Seniority seniority) {
+        this.seniority = seniority;
+    }
+
+    public Expertise getExpertiseArea() {
+        return expertiseArea;
+    }
+
+    public void setExpertiseArea(final Expertise expertiseArea) {
+        this.expertiseArea = expertiseArea;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(final String name) {
+        this.name = name;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(final String type) {
+        this.type = type;
+    }
+
+    public int getTicketId() {
+        return ticketId;
+    }
+
+    public void setTicketId(final int ticketId) {
+        this.ticketId = ticketId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(final String title) {
+        this.title = title;
+    }
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(final String description) {
+        this.description = description;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(final String status) {
+        this.status = status;
+    }
+
+    @JsonProperty("businessPriority")
+    public Priority getPriority() {
+        return priority;
+    }
+
+    @JsonProperty("businessPriority")
+    public void setPriority(final Priority priority) {
+        this.priority = priority;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(final String severity) {
+        this.severity = severity;
+    }
+
+    public String getReportedBy() {
+        return reportedBy;
+    }
+
+    public void setReportedBy(final String reportedBy) {
+        this.reportedBy = reportedBy;
+    }
+
+    public String getMilestoneName() {
+        return milestoneName;
+    }
+
+    public void setMilestoneName(final String milestoneName) {
+        this.milestoneName = milestoneName;
+    }
+
+    public String getDueDate() {
+        return dueDate;
+    }
+
+    public void setDueDate(final String dueDate) {
+        this.dueDate = dueDate;
+    }
+
+    public String getExpectedBehavior() {
+        return expectedBehavior;
+    }
+
+    public void setExpectedBehavior(final String expectedBehavior) {
+        this.expectedBehavior = expectedBehavior;
+    }
+
+    public String getActualBehavior() {
+        return actualBehavior;
+    }
+
+    public void setActualBehavior(final String actualBehavior) {
+        this.actualBehavior = actualBehavior;
+    }
+
+    public String getFrequency() {
+        return frequency;
+    }
+
+    public void setFrequency(final String frequency) {
+        this.frequency = frequency;
+    }
+
+    public String getUiElementId() {
+        return uiElementId;
+    }
+
+    public void setUiElementId(final String uiElementId) {
+        this.uiElementId = uiElementId;
+    }
+
+    public String getBusinessValue() {
+        return businessValue;
+    }
+
+    public void setBusinessValue(final String businessValue) {
+        this.businessValue = businessValue;
+    }
+
+    public String getCustomerDemand() {
+        return customerDemand;
+    }
+
+    public void setCustomerDemand(final String customerDemand) {
+        this.customerDemand = customerDemand;
+    }
+
+    public int getUsabilityScore() {
+        return usabilityScore;
+    }
+
+    public void setUsabilityScore(final int usabilityScore) {
+        this.usabilityScore = usabilityScore;
+    }
+
+    public int getErrorCode() {
+        return errorCode;
+    }
+
+    public void setErrorCode(final int errorCode) {
+        this.errorCode = errorCode;
+    }
+
+    public String getEnvironment() {
+        return environment;
+    }
+
+    public void setEnvironment(final String environment) {
+        this.environment = environment;
+    }
+
+    public List<Integer> getTickets() {
+        return tickets;
+    }
+
+    public void setTickets(final List<Integer> tickets) {
+        this.tickets = tickets;
+    }
+
+    public List<String> getBlockingFor() {
+        return blockingFor;
+    }
+
+    public void setBlockingFor(final List<String> blockingFor) {
+        this.blockingFor = blockingFor;
+    }
+
+    public List<String> getAssignedDevs() {
+        return assignedDevs;
+    }
+
+    public void setAssignedDevs(final List<String> assignedDevs) {
+        this.assignedDevs = assignedDevs;
+    }
+
+    public String getComment() {
+        return comment;
+    }
+
+    public void setComment(final String comment) {
+        this.comment = comment;
+    }
+
+    public Map<String, Object> getFilters() {
+        return filters;
+    }
+
+    public void setFilters(final Map<String, Object> filters) {
+        this.filters = filters;
+    }
 }

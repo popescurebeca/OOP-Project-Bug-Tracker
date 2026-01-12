@@ -1,9 +1,13 @@
 package main.visitor;
 
-import main.model.ticket.Bug;
-import main.model.ticket.FeatureRequest;
-import main.model.ticket.UIFeedback;
-
+/**
+ * Interface for elements that can be visited by a Visitor.
+ */
 public interface Visitable {
+    /**
+     * Accepts a visitor.
+     *
+     * @param v The visitor instance.
+     */
     void accept(Visitor v);
 }

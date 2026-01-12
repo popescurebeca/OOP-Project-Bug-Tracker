@@ -50,7 +50,7 @@ public class App {
             jackson library, available here: https://www.baeldung.com/jackson-annotations
         */
         InputData[] usersInput = MAPPER.readValue(new File(INPUT_USERS_FIELD), InputData[].class);
-
+        Database.getInstance().reset();
         Database.getInstance().loadUsers(Arrays.asList(usersInput));
 
         // TODO 2: process commands.
