@@ -39,7 +39,7 @@ public abstract class Ticket implements Visitable {
     /**
      * Inner class representing a comment on a ticket.
      */
-    public static class Comment {
+    public static final class Comment {
         private String author;
         private String content;
         private String createdAt;
@@ -73,7 +73,7 @@ public abstract class Ticket implements Visitable {
     /**
      * Inner class representing a history entry for ticket actions.
      */
-    public static class HistoryEntry {
+    public static final class HistoryEntry {
         private String action;      // ASSIGNED, STATUS_CHANGED, etc.
         private String by;
         private String timestamp;
@@ -99,24 +99,24 @@ public abstract class Ticket implements Visitable {
         /**
          * Sets the 'from' and 'to' fields for status changes.
          *
-         * @param from The old status.
-         * @param to   The new status.
+         * @param fromStatus The old status.
+         * @param toStatus   The new status.
          * @return The current HistoryEntry instance.
          */
-        public HistoryEntry setFromTo(final String from, final String to) {
-            this.from = from;
-            this.to = to;
+        public HistoryEntry setFromTo(final String fromStatus, final String toStatus) {
+            this.from = fromStatus;
+            this.to = toStatus;
             return this;
         }
 
         /**
          * Sets the milestone related to the action.
          *
-         * @param milestone The milestone name.
+         * @param milestoneName The milestone name.
          * @return The current HistoryEntry instance.
          */
-        public HistoryEntry setMilestone(final String milestone) {
-            this.milestone = milestone;
+        public HistoryEntry setMilestone(final String milestoneName) {
+            this.milestone = milestoneName;
             return this;
         }
 
@@ -172,19 +172,20 @@ public abstract class Ticket implements Visitable {
 
     // --- METHODS FOR COMMENTS ---
 
-    public List<Comment> getComments() {
+    public final List<Comment> getComments() {
         return comments;
     }
 
     /**
      * Adds a comment to the ticket.
      *
-     * @param author    The author of the comment.
-     * @param content   The content of the comment.
-     * @param createdAt The creation timestamp.
+     * @param author  The author of the comment.
+     * @param content The content of the comment.
+     * @param date    The creation timestamp.
      */
-    public void addComment(final String author, final String content, final String createdAt) {
-        this.comments.add(new Comment(author, content, createdAt));
+    public final void addComment(final String author, final String content,
+                                 final String date) {
+        this.comments.add(new Comment(author, content, date));
     }
 
     /**
@@ -192,13 +193,13 @@ public abstract class Ticket implements Visitable {
      *
      * @param c The comment to remove.
      */
-    public void removeComment(final Comment c) {
+    public final void removeComment(final Comment c) {
         this.comments.remove(c);
     }
 
     // --- METHODS FOR HISTORY ---
 
-    public List<HistoryEntry> getHistory() {
+    public final List<HistoryEntry> getHistory() {
         return history;
     }
 
@@ -207,7 +208,7 @@ public abstract class Ticket implements Visitable {
      *
      * @param entry The history entry to add.
      */
-    public void addHistory(final HistoryEntry entry) {
+    public final void addHistory(final HistoryEntry entry) {
         this.history.add(entry);
     }
 
@@ -217,25 +218,25 @@ public abstract class Ticket implements Visitable {
      * @return True if reportedBy is null or empty, false otherwise.
      */
     @JsonIgnore
-    public boolean isAnonymous() {
+    public final boolean isAnonymous() {
         return this.reportedBy == null || this.reportedBy.trim().isEmpty();
     }
 
     // --- GETTERS & SETTERS ---
 
-    public int getId() {
+    public final int getId() {
         return id;
     }
 
-    public String getType() {
+    public final String getType() {
         return type;
     }
 
-    public String getTitle() {
+    public final String getTitle() {
         return title;
     }
 
-    public String getDescription() {
+    public final String getDescription() {
         return description;
     }
 
@@ -245,7 +246,7 @@ public abstract class Ticket implements Visitable {
      *
      * @param priority The priority to set.
      */
-    public void setPriority(final Priority priority) {
+    public final void setPriority(final Priority priority) {
         this.priority = priority;
         if (this.initialPriority == null) {
             this.initialPriority = priority;
@@ -257,7 +258,7 @@ public abstract class Ticket implements Visitable {
      *
      * @param p The priority to force set.
      */
-    public void setForcePriority(final Priority p) {
+    public final void setForcePriority(final Priority p) {
         this.forcePriority = p;
     }
 
@@ -267,7 +268,7 @@ public abstract class Ticket implements Visitable {
      *
      * @return The effective priority.
      */
-    public Priority getPriority() {
+    public final Priority getPriority() {
         if (this.forcePriority != null) {
             return this.forcePriority;
         }
@@ -279,35 +280,35 @@ public abstract class Ticket implements Visitable {
      *
      * @return The initial priority.
      */
-    public Priority getInitialPriority() {
+    public final Priority getInitialPriority() {
         return initialPriority != null ? initialPriority : priority;
     }
 
-    public String getStatus() {
+    public final String getStatus() {
         return status;
     }
 
-    public void setStatus(final String status) {
+    public final void setStatus(final String status) {
         this.status = status;
     }
 
-    public String getCreatedAt() {
+    public final String getCreatedAt() {
         return createdAt;
     }
 
-    public String getAssignedAt() {
+    public final String getAssignedAt() {
         return assignedAt != null ? assignedAt : "";
     }
 
-    public void setAssignedAt(final String assignedAt) {
+    public final void setAssignedAt(final String assignedAt) {
         this.assignedAt = assignedAt;
     }
 
-    public String getSolvedAt() {
+    public final String getSolvedAt() {
         return solvedAt != null ? solvedAt : "";
     }
 
-    public void setSolvedAt(final String solvedAt) {
+    public final void setSolvedAt(final String solvedAt) {
         this.solvedAt = solvedAt;
     }
 
@@ -316,7 +317,7 @@ public abstract class Ticket implements Visitable {
      *
      * @return The assignee username or empty string if null.
      */
-    public String getAssignee() {
+    public final String getAssignee() {
         return assignedTo != null ? assignedTo : "";
     }
 
@@ -325,27 +326,27 @@ public abstract class Ticket implements Visitable {
      *
      * @param assignee The assignee username.
      */
-    public void setAssignee(final String assignee) {
+    public final void setAssignee(final String assignee) {
         this.assignedTo = assignee;
     }
 
     // This helps serialization if JSON uses 'assignedTo' key
-    public String getAssignedTo() {
+    public final String getAssignedTo() {
         return getAssignee();
     }
 
-    public String getReportedBy() {
+    public final String getReportedBy() {
         return reportedBy;
     }
 
-    public String getExpertiseArea() {
+    public final String getExpertiseArea() {
         return expertiseArea;
     }
 
-    public void setExpertiseArea(final String expertiseArea) {
+    public final void setExpertiseArea(final String expertiseArea) {
         this.expertiseArea = expertiseArea;
     }
 
     @Override
-    public abstract void accept(final Visitor v);
+    public abstract void accept(Visitor v);
 }

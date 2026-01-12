@@ -3,7 +3,6 @@ package main.commands;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import main.commands.Command;
 import main.database.Database;
 import main.model.Milestone;
 import main.model.ticket.Ticket;
@@ -15,79 +14,46 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-public class ViewTicketsCommand implements Command {
+/**
+ * Command to view all tickets visible to a user.
+ */
+public final class ViewTicketsCommand implements Command {
     private final InputData data;
 
-    public ViewTicketsCommand(InputData data) {
+    /**
+     * Constructor for ViewTicketsCommand.
+     *
+     * @param data The input data containing command parameters.
+     */
+    public ViewTicketsCommand(final InputData data) {
         this.data = data;
     }
 
     @Override
-    public void execute(List<ObjectNode> outputs) {
+    public void execute(final List<ObjectNode> outputs) {
         Database db = Database.getInstance();
         ObjectMapper mapper = new ObjectMapper();
 
         LocalDate currentDay = LocalDate.parse(data.getTimestamp());
 
+        // Update milestones rules first
         for (Milestone m : db.getMilestones()) {
             m.applyRules(db, currentDay);
         }
 
-        // 1. Verificare User (pentru siguranță)
+        // 1. User Check
         User user = db.findUserByUsername(data.getUsername());
         if (user == null) {
-            // Dacă userul nu există, output-ul tău de eroare arată așa:
-            // Dar în exemplul tău "X_reporter" era la reportTicket, nu viewTickets.
-            // La viewTickets, dacă userul nu e găsit, de obicei nu se generează output sau e eroare standard.
-            // Vom presupune fluxul standard de eroare aici:
-            ObjectNode error = mapper.createObjectNode();
-            error.put("command", "viewTickets");
-            error.put("username", data.getUsername());
-            error.put("timestamp", data.getTimestamp());
-            error.put("error", "The user " + data.getUsername() + " was not found.");
-            // outputs.add(error); // Decomentează dacă checker-ul cere eroare aici
             return;
         }
 
-        // 2. Filtrare Tichete
-        List<Ticket> allTickets = db.getTickets();
-        List<Ticket> filteredTickets;
+        // 2. Filter tickets based on visibility rules
+        List<Ticket> visibleTickets = db.getTickets().stream()
+                .filter(t -> isVisible(user, t, db))
+                .sorted(Comparator.comparingInt(Ticket::getId))
+                .collect(Collectors.toList());
 
-        String role = String.valueOf(user.getRole()).toUpperCase();
-
-        if (role.equals("REPORTER")) {
-            // Reporterul vede doar tichetele lui
-            filteredTickets = allTickets.stream()
-                    .filter(t -> t.getReportedBy().equals(user.getUsername()))
-                    .collect(Collectors.toList());
-
-        } else if (role.equals("DEVELOPER") || role.equals("EMPLOYEE")) {
-            filteredTickets = allTickets.stream()
-                    .filter(t -> {
-                        // Condiția 1: Trebuie să fie OPEN
-                        if (!"OPEN".equals(t.getStatus())) {
-                            return false;
-                        }
-
-                        // Condiția 2: Acces la Milestone
-                        Milestone m = db.findMilestoneByTicketId(t.getId());
-                        if (m != null) {
-                            return m.getAssignedDevs().contains(user.getUsername());
-                        }
-
-                        // Dacă nu are milestone, e vizibil
-                        return true;
-                    })
-                    .collect(Collectors.toList());
-        } else {
-            // MANAGERII văd tot
-            filteredTickets = allTickets;
-        }
-
-        // 3. Sortare după ID (ca să apară în ordine: 0, 1, 2)
-        filteredTickets.sort(Comparator.comparingInt(Ticket::getId));
-
-        // 4. CONSTRUCȚIA MANUALĂ A JSON-ului
+        // 3. Construct JSON Output
         ObjectNode resultNode = mapper.createObjectNode();
         resultNode.put("command", "viewTickets");
         resultNode.put("username", data.getUsername());
@@ -95,44 +61,79 @@ public class ViewTicketsCommand implements Command {
 
         ArrayNode ticketsArray = mapper.createArrayNode();
 
-        for (Ticket t : filteredTickets) {
-            // Aici creăm manual obiectul JSON pentru un singur tichet
+        for (Ticket t : visibleTickets) {
             ObjectNode ticketNode = mapper.createObjectNode();
-
-            // Adăugăm EXACT câmpurile cerute, în ordinea cerută (dacă contează)
             ticketNode.put("id", t.getId());
             ticketNode.put("type", t.getType());
             ticketNode.put("title", t.getTitle());
 
-            // Mapare manuală: în clasă e 'priority', în JSON vrei 'businessPriority'
+            // Map "priority" to "businessPriority" for JSON output
             ticketNode.put("businessPriority", t.getPriority().name());
 
             ticketNode.put("status", t.getStatus());
             ticketNode.put("createdAt", t.getCreatedAt());
 
-            // Tratăm câmpurile care pot fi goale (Ticket.java le inițializează cu "", deci e safe)
+            // Handle optional fields (initialized to "" in Ticket)
             ticketNode.put("assignedAt", t.getAssignedAt());
             ticketNode.put("solvedAt", t.getSolvedAt());
             ticketNode.put("assignedTo", t.getAssignedTo());
             ticketNode.put("reportedBy", t.getReportedBy());
 
-            // Gestionarea listei de comentarii
+            // Handle comments
             ArrayNode commentsArray = mapper.createArrayNode();
-            for (Ticket.Comment c : t.getComments()) {
-                ObjectNode commentNode = mapper.createObjectNode();
-                commentNode.put("author", c.getAuthor());
-                commentNode.put("content", c.getContent());
-                commentNode.put("createdAt", c.getCreatedAt());
-                commentsArray.add(commentNode);
+            if (t.getComments() != null) {
+                for (Ticket.Comment c : t.getComments()) {
+                    ObjectNode commentNode = mapper.createObjectNode();
+                    commentNode.put("author", c.getAuthor());
+                    commentNode.put("content", c.getContent());
+                    commentNode.put("createdAt", c.getCreatedAt());
+                    commentsArray.add(commentNode);
+                }
             }
             ticketNode.set("comments", commentsArray);
-            ticketNode.set("comments", commentsArray);
 
-            // Adăugăm tichetul în lista mare
             ticketsArray.add(ticketNode);
         }
 
         resultNode.set("tickets", ticketsArray);
         outputs.add(resultNode);
+    }
+
+    /**
+     * Determines if a user can see a specific ticket based on their role and ticket state.
+     *
+     * @param user The user attempting to view the ticket.
+     * @param t    The ticket.
+     * @param db   The database instance (needed to check milestones).
+     * @return True if the ticket is visible to the user, false otherwise.
+     */
+    private boolean isVisible(final User user, final Ticket t, final Database db) {
+        String role = String.valueOf(user.getRole()).toUpperCase();
+
+        if ("MANAGER".equals(role)) {
+            return true;
+        }
+
+        if ("REPORTER".equals(role)) {
+            return t.getReportedBy().equals(user.getUsername());
+        }
+
+        if ("DEVELOPER".equals(role) || "EMPLOYEE".equals(role)) {
+            // Condition 1: Must be OPEN
+            if (!"OPEN".equals(t.getStatus())) {
+                return false;
+            }
+
+            // Condition 2: Check Milestone access
+            Milestone m = db.findMilestoneByTicketId(t.getId());
+            if (m != null) {
+                return m.getAssignedDevs().contains(user.getUsername());
+            }
+
+            // If not in a milestone, it is visible
+            return true;
+        }
+
+        return false;
     }
 }

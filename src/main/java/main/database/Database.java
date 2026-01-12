@@ -31,6 +31,8 @@ public final class Database {
     private boolean stopTestingPhase = false;
     private LocalDate projectStartDate = null;
 
+    private static final int TESTING_PHASE_DAYS = 12;
+
     /**
      * Private Constructor.
      * Initializes empty lists and sets default testing phase to active.
@@ -228,7 +230,7 @@ public final class Database {
 
         // Testing phase is 12 days (days 0..11 or 1..12 depends on interpretation).
         // Usually rule is <= 12 days.
-        return daysBetween <= 12;
+        return daysBetween <= TESTING_PHASE_DAYS;
     }
 
     /**

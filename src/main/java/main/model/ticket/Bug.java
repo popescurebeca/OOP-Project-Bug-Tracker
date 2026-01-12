@@ -6,7 +6,7 @@ import main.visitor.Visitor;
 /**
  * Represents a Bug ticket in the system.
  */
-public class Bug extends Ticket {
+public final class Bug extends Ticket {
     private String severity;
     private String frequency;
 

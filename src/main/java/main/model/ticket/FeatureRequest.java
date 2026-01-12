@@ -6,7 +6,7 @@ import main.visitor.Visitor;
 /**
  * Represents a Feature Request ticket in the system.
  */
-public class FeatureRequest extends Ticket {
+public final class FeatureRequest extends Ticket {
     private String customerDemand; // LOW, MEDIUM, HIGH, VERY_HIGH
     private String businessValue;  // S, M, L, XL
 

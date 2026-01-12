@@ -6,7 +6,7 @@ import main.visitor.Visitor;
 /**
  * Represents a UI Feedback ticket in the system.
  */
-public class UIFeedback extends Ticket {
+public final class UIFeedback extends Ticket {
     private int usabilityScore; // 1-10
     private String uiElementId;
     private String businessValue;

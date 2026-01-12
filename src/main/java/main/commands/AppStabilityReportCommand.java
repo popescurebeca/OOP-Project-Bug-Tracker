@@ -21,6 +21,7 @@ public class AppStabilityReportCommand implements Command {
     private final Database db;
     private final InputData input;
     private final ObjectMapper mapper = new ObjectMapper();
+    private static final double STABILITY_THRESHOLD = 50.0;
 
     /**
      * Constructor for AppStabilityReportCommand.
@@ -100,7 +101,7 @@ public class AppStabilityReportCommand implements Command {
                         .allMatch(r -> "NEGLIGIBLE".equals(r));
 
                 boolean allImpactsLow = impactByType.values().stream()
-                        .allMatch(i -> i < 50.0);
+                        .allMatch(i -> i < STABILITY_THRESHOLD);
 
                 if (allRisksNegligible && allImpactsLow) {
                     appStability = "STABLE";

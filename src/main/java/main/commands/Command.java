@@ -13,5 +13,5 @@ public interface Command {
      *
      * @param outputs The list of JSON output nodes.
      */
-    void execute(final List<ObjectNode> outputs);
+    void execute(List<ObjectNode> outputs);
 }

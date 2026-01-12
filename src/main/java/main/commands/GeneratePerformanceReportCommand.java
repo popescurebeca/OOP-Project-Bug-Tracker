@@ -22,6 +22,24 @@ import java.util.stream.Collectors;
  * Command to generate a performance report for developers.
  */
 public class GeneratePerformanceReportCommand implements Command {
+
+    // --- Constants for Calculations ---
+    private static final double JUNIOR_CLOSED_COEFF = 0.5;
+    private static final int JUNIOR_BONUS = 5;
+
+    private static final double MID_CLOSED_COEFF = 0.5;
+    private static final double MID_HIGH_PRIO_COEFF = 0.7;
+    private static final double MID_TIME_COEFF = 0.3;
+    private static final int MID_BONUS = 15;
+
+    private static final double SENIOR_CLOSED_COEFF = 0.5;
+    private static final double SENIOR_HIGH_PRIO_COEFF = 1.0;
+    private static final double SENIOR_TIME_COEFF = 0.5;
+    private static final int SENIOR_BONUS = 30;
+
+    private static final double ROUNDING_FACTOR = 100.0;
+    private static final double TICKET_TYPES_COUNT = 3.0;
+
     private final Database db;
     private final InputData input;
     private final ObjectMapper mapper = new ObjectMapper();
@@ -142,16 +160,20 @@ public class GeneratePerformanceReportCommand implements Command {
             case JUNIOR:
                 double diversity = ticketDiversityFactor(stats.getBugCount(),
                         stats.getFeatureCount(), stats.getUiCount());
-                rawScore = Math.max(0, 0.5 * closed - diversity);
-                bonus = 5;
+                rawScore = Math.max(0, JUNIOR_CLOSED_COEFF * closed - diversity);
+                bonus = JUNIOR_BONUS;
                 break;
             case MID:
-                rawScore = Math.max(0, 0.5 * closed + 0.7 * highPrio - 0.3 * avgTime);
-                bonus = 15;
+                rawScore = Math.max(0, MID_CLOSED_COEFF * closed
+                        + MID_HIGH_PRIO_COEFF * highPrio
+                        - MID_TIME_COEFF * avgTime);
+                bonus = MID_BONUS;
                 break;
             case SENIOR:
-                rawScore = Math.max(0, 0.5 * closed + 1.0 * highPrio - 0.5 * avgTime);
-                bonus = 30;
+                rawScore = Math.max(0, SENIOR_CLOSED_COEFF * closed
+                        + SENIOR_HIGH_PRIO_COEFF * highPrio
+                        - SENIOR_TIME_COEFF * avgTime);
+                bonus = SENIOR_BONUS;
                 break;
             default:
                 break;
@@ -164,18 +186,18 @@ public class GeneratePerformanceReportCommand implements Command {
     // --- MATHEMATICAL METHODS FROM REQUIREMENTS ---
 
     private double round(final double value) {
-        return Math.round(value * 100.0) / 100.0;
+        return Math.round(value * ROUNDING_FACTOR) / ROUNDING_FACTOR;
     }
 
     private double averageResolvedTicketType(final int bug, final int feature, final int ui) {
-        return (bug + feature + ui) / 3.0;
+        return (bug + feature + ui) / TICKET_TYPES_COUNT;
     }
 
     private double standardDeviation(final int bug, final int feature, final int ui) {
         double mean = averageResolvedTicketType(bug, feature, ui);
         double variance = (Math.pow(bug - mean, 2)
                 + Math.pow(feature - mean, 2)
-                + Math.pow(ui - mean, 2)) / 3.0;
+                + Math.pow(ui - mean, 2)) / TICKET_TYPES_COUNT;
         return Math.sqrt(variance);
     }
 

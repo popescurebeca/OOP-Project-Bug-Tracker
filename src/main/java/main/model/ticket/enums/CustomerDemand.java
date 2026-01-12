@@ -1,5 +1,8 @@
 package main.model.ticket.enums;
 
+/**
+ * Enum representing the customer demand for a feature.
+ */
 public enum CustomerDemand {
     LOW(1),
     MEDIUM(3),
@@ -8,10 +11,20 @@ public enum CustomerDemand {
 
     private final int value;
 
-    CustomerDemand(int value) {
+    /**
+     * Constructor for CustomerDemand.
+     *
+     * @param value The integer value of the demand.
+     */
+    CustomerDemand(final int value) {
         this.value = value;
     }
 
+    /**
+     * Gets the integer value.
+     *
+     * @return The value.
+     */
     public int getValue() {
         return value;
     }
