@@ -20,20 +20,12 @@ import java.util.List;
 public class ReportTicketCommand implements Command {
     private final InputData data;
 
-    /**
-     * Constructor for ReportTicketCommand.
-     *
-     * @param data The input data containing command parameters.
-     */
+
     public ReportTicketCommand(final InputData data) {
         this.data = data;
     }
 
-    /**
-     * Executes the report ticket command.
-     *
-     * @param outputs The list of outputs to append results to.
-     */
+
     @Override
     public void execute(final List<ObjectNode> outputs) {
         Database db = Database.getInstance();
@@ -96,7 +88,7 @@ public class ReportTicketCommand implements Command {
                 return; // Stop execution
             }
 
-            // If anonymous BUG, priority automatically becomes LOW
+            // If anonymous BUGG, priority automatically becomes LOW
             data.setPriority(Priority.LOW);
         }
 
@@ -106,7 +98,7 @@ public class ReportTicketCommand implements Command {
             return;
         }
 
-        // Generate incremental ID
+        // Generate incremental id
         int newId = db.getTickets().size();
 
         Ticket newTicket = switch (ticketType.toUpperCase()) {
@@ -116,8 +108,7 @@ public class ReportTicketCommand implements Command {
 
                 bug.setSeverity(data.getSeverity());
                 bug.setFrequency(data.getFrequency());
-
-                // Return 'bug' object
+                // Return bug obj
                 yield bug;
             }
             case "FEATURE_REQUEST" -> {
@@ -128,7 +119,7 @@ public class ReportTicketCommand implements Command {
                 fr.setBusinessValue(data.getBusinessValue());
                 fr.setCustomerDemand(data.getCustomerDemand());
 
-                // Return 'fr' object
+                // Return fr object
                 yield fr;
             }
             case "UI_FEEDBACK" -> {
@@ -139,7 +130,7 @@ public class ReportTicketCommand implements Command {
                 ui.setBusinessValue(data.getBusinessValue());
                 ui.setUsabilityScore(data.getUsabilityScore());
 
-                // Return 'ui' object
+                // Return ui object
                 yield ui;
             }
             default -> {
@@ -151,11 +142,12 @@ public class ReportTicketCommand implements Command {
         if (newTicket != null) {
             db.addTicket(newTicket);
             if (data.getExpertiseArea() != null) {
+                //System.out.println("Setting expertise area: " + data.getExpertiseArea().toString());
                 newTicket.setExpertiseArea(data.getExpertiseArea().toString());
             } else {
                 newTicket.setExpertiseArea("");
             }
-            // NO output for success ("Nu există output")
+
         }
     }
 }

@@ -20,12 +20,7 @@ public class GenerateResolutionEfficiencyReportCommand implements Command {
     private final InputData input;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * Constructor for GenerateResolutionEfficiencyReportCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public GenerateResolutionEfficiencyReportCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;

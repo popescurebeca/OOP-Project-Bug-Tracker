@@ -21,12 +21,7 @@ public class GenerateCustomerImpactReportCommand implements Command {
     private final InputData input;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * Constructor for GenerateCustomerImpactReportCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public GenerateCustomerImpactReportCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
@@ -42,7 +37,7 @@ public class GenerateCustomerImpactReportCommand implements Command {
         String username = input.getUsername();
         String timestamp = input.getTimestamp();
 
-        // 1. Filter tickets (OPEN or IN_PROGRESS)
+        // 1. Filter tickets
         List<Ticket> activeTickets = db.getTickets().stream()
                 .filter(t -> "OPEN".equals(t.getStatus())
                         || "IN_PROGRESS".equals(t.getStatus()))
@@ -52,12 +47,11 @@ public class GenerateCustomerImpactReportCommand implements Command {
         CustomerImpactVisitor visitor = new CustomerImpactVisitor();
 
         // 3. Visit each ticket
-        // Here is the magic: t.accept(visitor) will call the correct visit method
         for (Ticket t : activeTickets) {
             t.accept(visitor);
         }
 
-        // Calculate manual priority distribution (this doesn't depend on ticket type)
+        // Calculate manual priority distribution
         Map<String, Integer> ticketsByPriority = new HashMap<>();
         ticketsByPriority.put("LOW", 0);
         ticketsByPriority.put("MEDIUM", 0);

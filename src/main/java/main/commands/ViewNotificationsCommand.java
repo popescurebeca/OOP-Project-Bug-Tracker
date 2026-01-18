@@ -56,8 +56,10 @@ public class ViewNotificationsCommand implements Command {
 
         ArrayNode notifsArray = result.putArray("notifications");
 
-        if (user instanceof Developer) {
-            Developer dev = (Developer) user;
+        Developer dev = null;
+
+        if ("DEVELOPER".equalsIgnoreCase(db.getUserRole(username))) {
+            dev = (Developer) user;
             List<String> notifications = dev.getNotifications();
 
             // 2. Add notifications to output
@@ -68,7 +70,7 @@ public class ViewNotificationsCommand implements Command {
             // 3. Clear notifications after viewing
             dev.clearNotifications();
         }
-        // If user is not a developer, list remains empty (or handle error if spec says so)
+        // If user is not a developer, list remains empty
 
         outputs.add(result);
     }

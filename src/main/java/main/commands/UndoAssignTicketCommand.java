@@ -15,12 +15,7 @@ public class UndoAssignTicketCommand implements Command {
     private final Database db;
     private final InputData input;
 
-    /**
-     * Constructor for UndoAssignTicketCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public UndoAssignTicketCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
@@ -55,7 +50,7 @@ public class UndoAssignTicketCommand implements Command {
             return;
         }
 
-        // --- Effective Undo ---
+        //  Effective Undo
         ticket.setAssignee("");
         ticket.setStatus("OPEN");
         ticket.setAssignedAt(""); // Reset assignment date

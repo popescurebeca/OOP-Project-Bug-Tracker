@@ -11,19 +11,17 @@ import java.util.Map;
  * Visitor implementation to calculate Ticket Risk metrics.
  */
 public final class TicketRiskVisitor implements Visitor {
-    // --- Constants for Calculations ---
     private static final double PERCENTAGE_MULTIPLIER = 100.0;
     private static final double BUG_MAX_SCORE = 12.0;
     private static final double FEATURE_MAX_SCORE = 20.0;
     private static final double UI_MAX_SCORE = 100.0;
     private static final int UI_BASE_FACTOR = 11;
 
-    // --- Constants for Risk Thresholds ---
     private static final double LOW_RISK_THRESHOLD = 25.0;
     private static final double MODERATE_RISK_THRESHOLD = 50.0;
     private static final double SIGNIFICANT_RISK_THRESHOLD = 75.0;
 
-    // --- Constants for Values ---
+    // Constants for Values
     private static final int VAL_1 = 1;
     private static final int VAL_2 = 2;
     private static final int VAL_3 = 3;
@@ -48,9 +46,7 @@ public final class TicketRiskVisitor implements Visitor {
         countByType.put("UI_FEEDBACK", 0);
     }
 
-    // --- BUG ---
-    // Formula: frequency * severityFactor
-    // Final: (Raw * 100) / 12
+    // BUG
     @Override
     public void visit(final Bug bug) {
         // Use helper methods or enums if available
@@ -63,9 +59,7 @@ public final class TicketRiskVisitor implements Visitor {
         accumulate("BUG", finalRisk);
     }
 
-    // --- FEATURE REQUEST ---
-    // Formula: businessValue + customerDemand
-    // Final: (Raw * 100) / 20
+    // FEATURE REQUEST
     @Override
     public void visit(final FeatureRequest fr) {
         int businessValue = getBusinessValue(fr.getBusinessValue());
@@ -77,9 +71,7 @@ public final class TicketRiskVisitor implements Visitor {
         accumulate("FEATURE_REQUEST", finalRisk);
     }
 
-    // --- UI FEEDBACK ---
-    // Formula: (11 - usabilityScore) * businessValue
-    // Final: (Raw * 100) / 100 (i.e., Raw)
+    // UI FEEDBACK
     @Override
     public void visit(final UIFeedback ui) {
         int businessValue = getBusinessValue(ui.getBusinessValue());
@@ -132,7 +124,7 @@ public final class TicketRiskVisitor implements Visitor {
         return countByType.getOrDefault(type, 0);
     }
 
-    // --- HELPER METHODS FOR VALUES ---
+    // HELPER METHODS FOR VALUES
 
     private int getSeverityValue(final String s) {
         if (s == null) {

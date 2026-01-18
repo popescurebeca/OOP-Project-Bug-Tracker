@@ -15,22 +15,12 @@ public class UndoAddCommentCommand implements Command {
     private final Database db;
     private final InputData input;
 
-    /**
-     * Constructor for UndoAddCommentCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public UndoAddCommentCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
     }
 
-    /**
-     * Executes the undo add comment command.
-     *
-     * @param outputs The list of outputs to append results to.
-     */
     @Override
     public void execute(final List<ObjectNode> outputs) {
         String username = input.getUsername();
@@ -74,6 +64,7 @@ public class UndoAddCommentCommand implements Command {
         }
 
         // Delete the comment
+        //System.out.println("Removing comment: " + match.getContent());
         ticket.removeComment(match);
     }
 }

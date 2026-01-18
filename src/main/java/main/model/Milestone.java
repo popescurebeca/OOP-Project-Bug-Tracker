@@ -34,17 +34,7 @@ public final class Milestone {
     @JsonIgnore
     private boolean notifiedUnblockedAfterDue = false;
 
-    /**
-     * Constructor for Milestone.
-     *
-     * @param name         The name of the milestone.
-     * @param createdBy    The creator's username.
-     * @param createdAt    The creation date.
-     * @param dueDate      The due date.
-     * @param blockingFor  List of milestones blocked by this one.
-     * @param ticketIds    List of ticket IDs.
-     * @param assignedDevs List of assigned developers.
-     */
+
     public Milestone(final String name, final String createdBy, final LocalDate createdAt,
                      final LocalDate dueDate, final List<String> blockingFor,
                      final List<Integer> ticketIds, final List<String> assignedDevs) {
@@ -57,76 +47,42 @@ public final class Milestone {
         this.assignedDevs = assignedDevs;
     }
 
-    /**
-     * Gets the name.
-     *
-     * @return The name.
-     */
+
     public String getName() {
         return name;
     }
 
-    /**
-     * Gets the creator.
-     *
-     * @return The creator username.
-     */
+
     public String getCreatedBy() {
         return createdBy;
     }
 
-    /**
-     * Gets the creation date.
-     *
-     * @return The creation date.
-     */
+
     public LocalDate getCreatedAt() {
         return createdAt;
     }
 
-    /**
-     * Gets the due date.
-     *
-     * @return The due date.
-     */
+
     public LocalDate getDueDate() {
         return dueDate;
     }
 
-    /**
-     * Gets the list of milestones blocked by this one.
-     *
-     * @return The list of blocked milestone names.
-     */
+
     public List<String> getBlockingFor() {
         return blockingFor;
     }
 
-    /**
-     * Gets the ticket IDs.
-     *
-     * @return The list of ticket IDs.
-     */
+
     public List<Integer> getTicketIds() {
         return ticketIds;
     }
 
-    /**
-     * Gets the assigned developers.
-     *
-     * @return The list of developer usernames.
-     */
+
     public List<String> getAssignedDevs() {
         return assignedDevs;
     }
 
-    /**
-     * Determines the status of the milestone.
-     * ACTIVE if there are open tickets, COMPLETED otherwise.
-     *
-     * @param allTickets List of all tickets.
-     * @return "COMPLETED" or "ACTIVE".
-     */
+
     public String getStatus(final List<Ticket> allTickets) {
         if (ticketIds.isEmpty()) {
             return "COMPLETED";
@@ -210,7 +166,6 @@ public final class Milestone {
             return 0;
         }
 
-        // Formula: dueDate - currentDay + 1
         return ChronoUnit.DAYS.between(refDate, dueDate) + 1;
     }
 
@@ -242,7 +197,6 @@ public final class Milestone {
         return allTickets.stream().filter(t -> t.getId() == id).findFirst().orElse(null);
     }
 
-    // --- MODIFICARE: APPLY RULES CU NOTIFICĂRI ---
 
     /**
      * Applies rules related to milestones (notifications, priority updates).
@@ -252,14 +206,11 @@ public final class Milestone {
      */
     public void applyRules(final Database db, final LocalDate currentDay) {
 
-        // 1. Verificăm dacă suntem BLOCAȚI
+        // If blocked, do nothing
         if (isBlocked(db)) {
             return;
         }
 
-        // --- REGULA NOTIFICARE: Unblocked AFTER Due Date ---
-        // MODIFICARE: Verificăm mai întâi dacă milestone-ul este DEPENDENT.
-        // Dacă nu apare în 'blockingFor' al nimănui, înseamnă că e independent.
 
         boolean isDependent = false;
         for (Milestone m : db.getMilestones()) {
@@ -270,7 +221,7 @@ public final class Milestone {
             }
         }
 
-        // Aplicăm notificarea doar dacă este dependent
+        // Apply notification for unblocked after due date
         if (isDependent && currentDay.isAfter(this.dueDate) && !notifiedUnblockedAfterDue) {
             String msg = "Milestone " + this.name
                     + " was unblocked after due date. All active tickets are now CRITICAL.";
@@ -280,12 +231,12 @@ public final class Milestone {
             setAllTicketsCritical(db);
         }
 
-        // --- CALCUL ZILE RĂMASE ---
+        // Calculate days until due
         long daysUntilDue = ChronoUnit.DAYS.between(currentDay, this.dueDate) + 1;
         boolean isCriticalTime = (daysUntilDue <= 2);
 
         if (isCriticalTime) {
-            // --- REGULA NOTIFICARE: Due Tomorrow ---
+            // Due tomorrow or today
             if (daysUntilDue == 2 && !notifiedDueTomorrow) {
                 String msg = "Milestone " + this.name
                         + " is due tomorrow. All unresolved tickets are now CRITICAL.";
@@ -295,13 +246,12 @@ public final class Milestone {
 
             setAllTicketsCritical(db);
         } else {
-            // 3. Regula de 3 zile (Se aplică doar dacă NU suntem în zona critică)
+            // 3 days or more until due - apply 3-day bump
             apply3DayBump(db, currentDay);
         }
     }
 
 
-    // --- Helper pentru a seta toate tichetele active pe CRITICAL ---
     private void setAllTicketsCritical(final Database db) {
         for (Integer id : this.ticketIds) {
             Ticket t = db.getTicket(id);
@@ -311,7 +261,6 @@ public final class Milestone {
         }
     }
 
-    // --- Helper pentru trimiterea notificărilor ---
     private void sendNotificationToDevs(final Database db, final String msg) {
         if (this.assignedDevs == null) {
             return;
@@ -319,53 +268,47 @@ public final class Milestone {
 
         for (String username : this.assignedDevs) {
             User u = db.findUserByUsername(username);
-            // Verificăm dacă userul este Developer (și nu Manager/Reporter)
-            if (u instanceof Developer) {
-                ((Developer) u).addNotification(msg);
+            Developer dev = null;
+            if ("DEVELOPER".equalsIgnoreCase(db.getUserRole(username))) {
+                dev = (Developer) u;
+                dev.addNotification(msg);
             }
         }
     }
 
-    // Helper intern: Calculează creșterea la fiecare 3 zile
     private void apply3DayBump(final Database db, final LocalDate currentDay) {
-        // Câte zile au trecut de la creare?
+        // How many days active?
         long daysActive = ChronoUnit.DAYS.between(this.createdAt, currentDay);
 
-        // Câte trepte urcăm? (ex: 7 zile active / 3 = 2 trepte)
         int bumps = (int) (daysActive / BUMP_INTERVAL_DAYS);
 
         if (bumps > 0) {
             for (Integer id : this.ticketIds) {
                 Ticket t = db.getTicket(id);
                 if (t != null && !"CLOSED".equals(t.getStatus())) {
-
-                    // Calculăm noua prioritate pornind de la cea INIȚIALĂ
                     main.model.Priority base = t.getInitialPriority();
                     main.model.Priority target = base;
 
                     for (int i = 0; i < bumps; i++) {
-                        target = target.next(); // Urcă o treaptă
+                        target = target.next();
                     }
 
-                    // Actualizăm tichetul
                     t.setForcePriority(target);
                 }
             }
         }
     }
 
-    // Helper intern: Verifică dacă acest milestone este blocat de altul
+    // Verify if this milestone is blocked by any active milestone
     private boolean isBlocked(final Database db) {
         for (Milestone other : db.getMilestones()) {
             if (other == this) {
                 continue;
             }
 
-            // Verificăm dacă 'other' blochează milestone-ul curent (this)
             if (other.getBlockingFor() != null
                     && other.getBlockingFor().contains(this.name)) {
 
-                // Verificăm dacă 'other' este încă ACTIV (are tichete deschise)
                 boolean otherIsActive = false;
                 for (Integer tid : other.getTicketIds()) {
                     Ticket t = db.getTicket(tid);
@@ -376,7 +319,7 @@ public final class Milestone {
                 }
 
                 if (otherIsActive) {
-                    return true; // Suntem blocați
+                    return true; // Blocked
                 }
             }
         }

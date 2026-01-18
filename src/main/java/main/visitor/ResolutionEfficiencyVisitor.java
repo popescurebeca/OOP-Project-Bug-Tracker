@@ -18,12 +18,11 @@ import java.util.Map;
  * Visitor implementation to calculate Resolution Efficiency metrics.
  */
 public final class ResolutionEfficiencyVisitor implements Visitor {
-    // --- Constants for Calculations ---
+
     private static final double BUG_SCORE_MULTIPLIER = 10.0;
     private static final double PERCENTAGE_MULTIPLIER = 100.0;
     private static final double ROUNDING_FACTOR = 100.0;
 
-    // --- Constants for Max Scores ---
     private static final double BUG_MAX_SCORE = 70.0;
     private static final double FEATURE_MAX_SCORE = 20.0;
     private static final double UI_MAX_SCORE = 20.0;
@@ -44,7 +43,7 @@ public final class ResolutionEfficiencyVisitor implements Visitor {
         countByType.put("UI_FEEDBACK", 0);
     }
 
-    // Helper for calculating days (daysToResolve)
+    // Helper for calculating days
     private long getDaysToResolve(final Ticket t) {
         if (t.getAssignedAt() == null || t.getSolvedAt() == null) {
             return 1; // Default safe
@@ -52,15 +51,10 @@ public final class ResolutionEfficiencyVisitor implements Visitor {
         LocalDate start = LocalDate.parse(t.getAssignedAt());
         LocalDate end = LocalDate.parse(t.getSolvedAt());
 
-        // Formula: day difference + 1 (to include current day/avoid division by 0)
-        // Ex: Assigned today, Resolved today -> Diff=0 -> Return 1
-        // Ex: Assigned today, Resolved tomorrow -> Diff=1 -> Return 2
         return ChronoUnit.DAYS.between(start, end) + 1;
     }
 
-    // --- BUG ---
-    // Formula: (frequency + severityFactor) * 10 / daysToResolve
-    // Final: (Score * 100) / 70
+    // BUG
     @Override
     public void visit(final Bug bug) {
         long days = getDaysToResolve(bug);
@@ -73,9 +67,7 @@ public final class ResolutionEfficiencyVisitor implements Visitor {
         accumulate("BUG", finalEff);
     }
 
-    // --- FEATURE REQUEST ---
-    // Formula: (businessValue + customerDemand) / daysToResolve
-    // Final: (Score * 100) / 20
+    // FEATURE REQUEST
     @Override
     public void visit(final FeatureRequest fr) {
         long days = getDaysToResolve(fr);
@@ -88,9 +80,7 @@ public final class ResolutionEfficiencyVisitor implements Visitor {
         accumulate("FEATURE_REQUEST", finalEff);
     }
 
-    // --- UI FEEDBACK ---
-    // Formula: (usabilityScore + businessValue) / daysToResolve
-    // Final: (Score * 100) / 20
+    // UI FEEDBACK
     @Override
     public void visit(final UIFeedback ui) {
         long days = getDaysToResolve(ui);

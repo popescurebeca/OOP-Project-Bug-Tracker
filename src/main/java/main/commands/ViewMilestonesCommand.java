@@ -42,6 +42,11 @@ public final class ViewMilestonesCommand implements Command {
         LocalDate currentDay = LocalDate.parse(input.getTimestamp());
         String role = db.getUserRole(username);
 
+        // --- FIX: Apply rules to all milestones before filtering/viewing ---
+        for (Milestone m : db.getMilestones()) {
+            m.applyRules(db, currentDay);
+        }
+
         // 1. Filter
         List<Milestone> filtered = db.getMilestones().stream()
                 .filter(m -> {

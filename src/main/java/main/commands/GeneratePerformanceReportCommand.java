@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import main.database.Database;
+import main.model.Milestone;
+import main.model.Priority;
 import main.model.ticket.Ticket;
 import main.model.user.Developer;
 import main.model.user.Manager;
@@ -14,14 +16,16 @@ import main.visitor.PerformanceStatsVisitor;
 
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.ChronoUnit;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
  * Command to generate a performance report for developers.
  */
-public class GeneratePerformanceReportCommand implements Command {
+public final class GeneratePerformanceReportCommand implements Command {
 
     // --- Constants for Calculations ---
     private static final double JUNIOR_CLOSED_COEFF = 0.5;
@@ -39,6 +43,7 @@ public class GeneratePerformanceReportCommand implements Command {
 
     private static final double ROUNDING_FACTOR = 100.0;
     private static final double TICKET_TYPES_COUNT = 3.0;
+    private static final int BUMP_INTERVAL_DAYS = 3;
 
     private final Database db;
     private final InputData input;
@@ -69,18 +74,23 @@ public class GeneratePerformanceReportCommand implements Command {
         YearMonth previousMonth = YearMonth.from(commandDate).minusMonths(1);
 
         User u = db.findUserByUsername(managerUsername);
-        if (!(u instanceof Manager)) {
+        Manager manager = null;
+        if ("MANAGER".equals(String.valueOf(u.getRole()))) {
+            manager = (Manager) u;
+        } else {
+            // Invalid user role for this command
             return;
         }
-        Manager manager = (Manager) u;
 
         // 2. Collect subordinates (Developers)
         List<Developer> team = manager.getSubordinates().stream()
-                .map(db::findUserByUsername)
-                .filter(user -> user instanceof Developer)
-                .map(user -> (Developer) user)
-                .sorted(Comparator.comparing(Developer::getUsername)) // Lexicographical sort
-                .collect(Collectors.toList());
+                .map(db::findUserByUsername).filter(Objects::nonNull)
+                // Convertim fiecare User într-un Optional<Developer>
+                .map(User::isDeveloper)
+                // Păstrăm doar cei care sunt prezenți (adică sunt Developers) și îi extragem
+                .flatMap(java.util.Optional::stream)
+                .sorted(Comparator.comparing(Developer::getUsername))
+                .toList();
 
         // 3. Prepare output
         ObjectNode root = mapper.createObjectNode();
@@ -91,10 +101,7 @@ public class GeneratePerformanceReportCommand implements Command {
 
         // 4. Process each developer
         for (Developer dev : team) {
-            // Filter relevant tickets:
-            // - CLOSED
-            // - Assignee = dev
-            // - SolvedAt in previous month
+            // Filter relevant tickets
             List<Ticket> devTickets = db.getTickets().stream()
                     .filter(t -> "CLOSED".equals(t.getStatus()))
                     .filter(t -> dev.getUsername().equals(t.getAssignee()))
@@ -106,6 +113,39 @@ public class GeneratePerformanceReportCommand implements Command {
                         return YearMonth.from(solvedDate).equals(previousMonth);
                     })
                     .collect(Collectors.toList());
+
+            for (Ticket t : devTickets) {
+                if (t.getInitialPriority() == Priority.LOW) {
+                    continue;
+                }
+
+                // Determine active duration: CreatedAt -> SolvedAt
+                // Use first closed date for consistency with time calculation
+                String solvedStr = getFirstClosedDate(t);
+                if (solvedStr == null) {
+                    solvedStr = t.getSolvedAt();
+                }
+
+                if (solvedStr != null && t.getCreatedAt() != null) {
+                    LocalDate created = LocalDate.parse(t.getCreatedAt());
+                    LocalDate solved = LocalDate.parse(solvedStr);
+                    long daysActive = ChronoUnit.DAYS.between(created, solved);
+
+                    // Check if ticket belonged to a milestone
+                    Milestone m = db.findMilestoneByTicketId(t.getId());
+                    if (m != null) {
+                        // Apply bump: every 3 days
+                        int bumps = (int) (daysActive / BUMP_INTERVAL_DAYS);
+                        if (bumps > 0) {
+                            Priority effectivePriority = t.getInitialPriority();
+                            for (int i = 0; i < bumps; i++) {
+                                effectivePriority = effectivePriority.next();
+                            }
+                            t.setForcePriority(effectivePriority);
+                        }
+                    }
+                }
+            }
 
             // Use Visitor to gather raw data
             PerformanceStatsVisitor statsVisitor = new PerformanceStatsVisitor();
@@ -136,13 +176,19 @@ public class GeneratePerformanceReportCommand implements Command {
         outputs.add(root);
     }
 
-    /**
-     * Calculates the performance score for a developer.
-     *
-     * @param dev   The developer.
-     * @param stats The visitor stats containing raw metrics.
-     * @return The calculated score.
-     */
+    private String getFirstClosedDate(final Ticket t) {
+        if (t.getHistory() != null) {
+            for (Ticket.HistoryEntry entry : t.getHistory()) {
+                if ("STATUS_CHANGED".equals(entry.getAction())
+                        && "CLOSED".equalsIgnoreCase(entry.getTo())) {
+                    return entry.getTimestamp();
+                }
+            }
+        }
+        return null;
+    }
+
+
     private double calculateScore(final Developer dev, final PerformanceStatsVisitor stats) {
         if (stats.getClosedTicketsCount() == 0) {
             return 0.0;
@@ -183,7 +229,7 @@ public class GeneratePerformanceReportCommand implements Command {
         return round(total);
     }
 
-    // --- MATHEMATICAL METHODS FROM REQUIREMENTS ---
+    // MATHEMATICAL METHODS
 
     private double round(final double value) {
         return Math.round(value * ROUNDING_FACTOR) / ROUNDING_FACTOR;

@@ -29,22 +29,13 @@ public class SearchCommand implements Command {
     private final InputData input;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * Constructor for SearchCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public SearchCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
     }
 
-    /**
-     * Executes the search command.
-     *
-     * @param outputs The list of outputs to append results to.
-     */
+
     @Override
     public void execute(final List<ObjectNode> outputs) {
         String username = input.getUsername();
@@ -101,15 +92,6 @@ public class SearchCommand implements Command {
 
             matches.add(t);
         }
-
-        // 3. SORTING: createdAt ASC, then ID ASC
-        matches.sort((t1, t2) -> {
-            int dateComp = t1.getCreatedAt().compareTo(t2.getCreatedAt());
-            if (dateComp != 0) {
-                return dateComp;
-            }
-            return Integer.compare(t1.getId(), t2.getId());
-        });
 
         // 4. JSON GENERATION
         for (Ticket t : matches) {
@@ -226,10 +208,12 @@ public class SearchCommand implements Command {
 
     // Logic for AvailableForAssignment (Repeats logic from AssignTicket)
     private boolean isAvailableForAssignment(final Ticket t, final User u) {
-        if (!(u instanceof Developer)) {
+        Developer dev = null;
+        if ("DEVELOPER".equalsIgnoreCase(db.getUserRole(u.getUsername()))) {
+            dev = (Developer) u;
+        } else {
             return false;
         }
-        Developer dev = (Developer) u;
 
         // 1. Status
         if (!"OPEN".equals(t.getStatus())) {
@@ -303,14 +287,15 @@ public class SearchCommand implements Command {
 
         for (String subName : subs) {
             User u = db.findUserByUsername(subName);
-            if (u instanceof Developer) {
-                Developer dev = (Developer) u;
-
+            Developer dev = null;
+            if ("DEVELOPER".equalsIgnoreCase(db.getUserRole(subName))) {
+                dev = (Developer) u;
                 // Apply filters
                 if (matchesDevFilters(dev, filters)) {
                     matches.add(dev);
                 }
             }
+
         }
 
         // Sort: Username lexicographical

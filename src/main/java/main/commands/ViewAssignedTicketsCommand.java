@@ -103,7 +103,8 @@ public class ViewAssignedTicketsCommand implements Command {
                 }
             }
         }
-
+        //System.out.println("Debug: ViewAssignedTicketsCommand executed for user " + username);
+        //        + " with " + assignedTickets.size() + " tickets.");
         outputs.add(result);
     }
 }

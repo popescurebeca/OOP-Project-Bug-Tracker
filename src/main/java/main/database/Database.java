@@ -67,9 +67,6 @@ public final class Database {
 
     /**
      * Loads users into the database from the provided input data.
-     * Uses Factory logic inside or manual instantiation based on roles.
-     *
-     * @param inputs The list of input data objects containing user info.
      */
     public void loadUsers(final List<InputData> inputs) {
         users.clear();
@@ -118,13 +115,8 @@ public final class Database {
         }
     }
 
-    // --- Helper Methods ---
-
     /**
      * Finds a user by their username.
-     *
-     * @param username The username to search for.
-     * @return The User object or null if not found.
      */
     public User findUserByUsername(final String username) {
         for (User u : users) {
@@ -137,8 +129,6 @@ public final class Database {
 
     /**
      * Adds a ticket to the database.
-     *
-     * @param ticket The ticket to add.
      */
     public void addTicket(final Ticket ticket) {
         tickets.add(ticket);
@@ -146,8 +136,6 @@ public final class Database {
 
     /**
      * Retrieves the list of all tickets.
-     *
-     * @return The list of tickets.
      */
     public List<Ticket> getTickets() {
         return tickets;
@@ -155,8 +143,6 @@ public final class Database {
 
     /**
      * Adds a milestone to the database.
-     *
-     * @param milestone The milestone to add.
      */
     public void addMilestone(final Milestone milestone) {
         milestones.add(milestone);
@@ -164,58 +150,23 @@ public final class Database {
 
     /**
      * Retrieves the list of all milestones.
-     *
-     * @return The list of milestones.
      */
     public List<Milestone> getMilestones() {
         return milestones;
     }
 
     /**
-     * Checks if the testing phase flag is currently true.
-     *
-     * @return True if testing phase is active, false otherwise.
-     */
-    public boolean isTestingPhaseActive() {
-        return testingPhaseActive;
-    }
-
-    /**
-     * Sets the testing phase activity flag.
-     *
-     * @param testingPhaseActive The new state of the testing phase.
-     */
-    public void setTestingPhaseActive(final boolean testingPhaseActive) {
-        this.testingPhaseActive = testingPhaseActive;
-    }
-
-    /**
      * Sets the project start date.
-     *
-     * @param date The project start date.
      */
     public void setProjectStartDate(final LocalDate date) {
-        // Set start date only if not already set (first command dictates start)
+        // Set start date only if not already set
         if (this.projectStartDate == null) {
             this.projectStartDate = date;
         }
     }
 
     /**
-     * Gets the project start date.
-     *
-     * @return The project start date.
-     */
-    public LocalDate getProjectStartDate() {
-        return projectStartDate;
-    }
-
-    /**
      * Checks if the testing phase is active based on the current command date.
-     * The testing phase lasts for 12 days from the start date.
-     *
-     * @param currentCommandDate The date of the current command.
-     * @return True if the testing phase is active, false otherwise.
      */
     public boolean isTestingPhaseActive(final LocalDate currentCommandDate) {
         if (!testingPhaseActive) {
@@ -228,16 +179,11 @@ public final class Database {
         // Calculate day difference
         long daysBetween = ChronoUnit.DAYS.between(projectStartDate, currentCommandDate);
 
-        // Testing phase is 12 days (days 0..11 or 1..12 depends on interpretation).
-        // Usually rule is <= 12 days.
         return daysBetween <= TESTING_PHASE_DAYS;
     }
 
     /**
      * Retrieves a ticket by its ID.
-     *
-     * @param id The ID of the ticket.
-     * @return The Ticket object, or null if not found.
      */
     public Ticket getTicket(final int id) {
         for (Ticket t : tickets) {
@@ -250,9 +196,6 @@ public final class Database {
 
     /**
      * Retrieves the role of a user by username.
-     *
-     * @param username The username.
-     * @return The role as a string, or "Developer" if not found.
      */
     public String getUserRole(final String username) {
         for (User u : users) {
@@ -267,9 +210,6 @@ public final class Database {
 
     /**
      * Finds a milestone that contains a specific ticket ID.
-     *
-     * @param ticketId The ticket ID to search for.
-     * @return The Milestone object, or null if not found.
      */
     public Milestone findMilestoneByTicketId(final int ticketId) {
         for (Milestone m : milestones) {
@@ -280,21 +220,10 @@ public final class Database {
         return null;
     }
 
-    // --- NEW METHODS FOR STOPPING EXECUTION ---
-
     /**
      * Stops the execution/testing phase permanently.
      */
     public void stopExec() {
         this.stopTestingPhase = true;
-    }
-
-    /**
-     * Checks if the execution stop flag is set.
-     *
-     * @return True if execution should stop.
-     */
-    public boolean isStopTestingPhase() {
-        return stopTestingPhase;
     }
 }

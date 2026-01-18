@@ -3,6 +3,8 @@ package main.model.user;
 import main.model.user.enums.Expertise;
 import main.model.user.enums.Seniority;
 
+import java.util.Optional;
+
 /**
  * Abstract base class for all users in the system.
  */
@@ -48,14 +50,6 @@ public abstract class User {
         this.username = username;
     }
 
-    public final String getEmail() {
-        return email;
-    }
-
-    public final void setEmail(final String email) {
-        this.email = email;
-    }
-
     public final String getRole() {
         return role;
     }
@@ -70,5 +64,9 @@ public abstract class User {
 
     public final void setPerformanceScore(final double performanceScore) {
         this.performanceScore = performanceScore;
+    }
+
+    public Optional<Developer> isDeveloper() {
+        return Optional.empty();
     }
 }

@@ -20,22 +20,13 @@ public class GenerateTicketRiskReportCommand implements Command {
     private final InputData input;
     private final ObjectMapper mapper = new ObjectMapper();
 
-    /**
-     * Constructor for GenerateTicketRiskReportCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public GenerateTicketRiskReportCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
     }
 
-    /**
-     * Executes the ticket risk report generation.
-     *
-     * @param outputs The list of outputs to append results to.
-     */
+
     @Override
     public void execute(final List<ObjectNode> outputs) {
         String username = input.getUsername();
@@ -55,7 +46,7 @@ public class GenerateTicketRiskReportCommand implements Command {
             t.accept(visitor);
         }
 
-        // 4. Calculate additional statistics (Priority Distribution) - independent of visitor
+        // 4. Calculate additional statistics
         Map<String, Integer> ticketsByPriority = new HashMap<>();
         ticketsByPriority.put("LOW", 0);
         ticketsByPriority.put("MEDIUM", 0);

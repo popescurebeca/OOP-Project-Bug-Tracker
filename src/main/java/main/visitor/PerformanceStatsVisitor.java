@@ -13,7 +13,7 @@ import java.time.temporal.ChronoUnit;
  * Visitor implementation to collect performance statistics from tickets.
  */
 public final class PerformanceStatsVisitor implements Visitor {
-    // Counters for types (needed for Junior - Diversity)
+
     private int bugCount = 0;
     private int featureCount = 0;
     private int uiCount = 0;
@@ -23,7 +23,7 @@ public final class PerformanceStatsVisitor implements Visitor {
     private int closedTicketsCount = 0;
     private long totalResolutionDays = 0;
 
-    // --- VISIT METHODS ---
+    // VISIT METHODS Implementation
 
     @Override
     public void visit(final Bug bug) {
@@ -47,17 +47,37 @@ public final class PerformanceStatsVisitor implements Visitor {
     private void processCommon(final Ticket t) {
         closedTicketsCount++;
 
-        // 1. Priority Check (HIGH/CRITICAL)
+        // 1. High/Critical check
         if (t.getPriority() == Priority.HIGH || t.getPriority() == Priority.CRITICAL) {
             highPriorityCount++;
         }
 
-        // 2. Resolution Days Calculation (AssignedAt -> SolvedAt)
-        // Formula: assignedAt - solvedAt + 1 (inclusive)
-        if (t.getAssignedAt() != null && t.getSolvedAt() != null) {
-            LocalDate start = LocalDate.parse(t.getAssignedAt());
-            LocalDate end = LocalDate.parse(t.getSolvedAt());
-            // Math.abs for safety, +1 according to requirements
+        // 2. Resolution days calculation
+        if (t.getAssignedAt() == null || t.getAssignedAt().isEmpty()) {
+            return;
+        }
+
+        LocalDate start = LocalDate.parse(t.getAssignedAt());
+        String solvedDateStr = t.getSolvedAt(); // Default to current solvedAt
+
+        if (t.getHistory() != null) {
+            for (Ticket.HistoryEntry entry : t.getHistory()) {
+                System.out.println("History Entry Action: " + entry.getAction() +
+                        ", From: " + entry.getFrom() + ", To: " + entry.getTo() +
+                        ", Timestamp: " + entry.getTimestamp());
+                if (entry.getTo() != null && "CLOSED".equalsIgnoreCase(entry.getTo())) {
+                    LocalDate entryDate = LocalDate.parse(entry.getTimestamp());
+
+                    if (!entryDate.isBefore(start)) {
+                        solvedDateStr = entry.getTimestamp();
+                    }
+                }
+            }
+        }
+
+        if (solvedDateStr != null && !solvedDateStr.isEmpty()) {
+            LocalDate end = LocalDate.parse(solvedDateStr);
+            // Formula: assignedAt - solvedAt + 1 (inclusive)
             long days = Math.abs(ChronoUnit.DAYS.between(start, end)) + 1;
             totalResolutionDays += days;
         }

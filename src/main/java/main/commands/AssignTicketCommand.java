@@ -22,22 +22,13 @@ public class AssignTicketCommand implements Command {
     private final Database db;
     private final InputData input;
 
-    /**
-     * Constructor for AssignTicketCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public AssignTicketCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
     }
 
-    /**
-     * Executes the ticket assignment command.
-     *
-     * @param outputs The list of outputs to append results to.
-     */
+
     @Override
     public void execute(final List<ObjectNode> outputs) {
         String username = input.getUsername();
@@ -63,12 +54,14 @@ public class AssignTicketCommand implements Command {
             return;
         }
 
-        if (!(user instanceof Developer)) {
+        Developer dev = null;
+        if ("DEVELOPER".equalsIgnoreCase(db.getUserRole(username))) {
+            dev = (Developer) user;
+        } else {
             return;
         }
-        Developer dev = (Developer) user;
 
-        // --- 1. EXPERTISE VALIDATION ---
+        // 1. EXPERTISE VALIDATION
         String ticketArea = ticket.getExpertiseArea();
         String userExpertise = dev.getExpertise().name();
 
@@ -77,13 +70,12 @@ public class AssignTicketCommand implements Command {
         allowedExpertise.add("FULLSTACK"); // Always allowed
 
         // Reverse mapping from "Accessible Zones" table
-        // Who has access to 'ticketArea'?
         if (ticketArea.equals("FRONTEND")) {
             allowedExpertise.add("FRONTEND");
             allowedExpertise.add("DESIGN"); // Design devs can access Frontend
         } else if (ticketArea.equals("BACKEND")) {
             allowedExpertise.add("BACKEND");
-            // DB devs cannot access Backend (Table says DB -> DB)
+            // DB devs cannot access Backend
         } else if (ticketArea.equals("DB")) {
             allowedExpertise.add("DB");
             allowedExpertise.add("BACKEND"); // Backend devs can access DB
@@ -107,7 +99,7 @@ public class AssignTicketCommand implements Command {
             return;
         }
 
-        // --- 2. SENIORITY VALIDATION ---
+        // 2. SENIORITY VALIDATION
         Priority p = ticket.getPriority();
         String type = ticket.getType(); // Need ticket type for table logic
         Seniority s = dev.getSeniority();
@@ -115,7 +107,7 @@ public class AssignTicketCommand implements Command {
         // Calculate Minimum Seniority Required
         Seniority minRequired = Seniority.JUNIOR;
 
-        // Rule: CRITICAL -> Senior only
+        // Rule: CRITICAL
         if (p == Priority.CRITICAL) {
             minRequired = Seniority.SENIOR;
         } else if (p == Priority.HIGH) {
@@ -125,7 +117,7 @@ public class AssignTicketCommand implements Command {
             }
         }
 
-        // Rule: Feature Request -> Mid or Senior
+        // Feature Request -> Mid or Senior
         if ("FEATURE_REQUEST".equalsIgnoreCase(type)) {
             if (minRequired.ordinal() < Seniority.MID.ordinal()) {
                 minRequired = Seniority.MID;
@@ -142,10 +134,6 @@ public class AssignTicketCommand implements Command {
             } else if (minRequired == Seniority.SENIOR) {
                 requiredSeniority.add("SENIOR");
             }
-            // (If Junior is min, everyone qualifies, so no error)
-
-            // Special case for output consistency: sometimes list order matters.
-            // "Required: MID, SENIOR" is standard alphabetical order M before S.
 
             ObjectNode error = JsonNodeFactory.instance.objectNode();
             error.put("command", "assignTicket");
@@ -158,7 +146,7 @@ public class AssignTicketCommand implements Command {
             return;
         }
 
-        // --- 3. MILESTONE VALIDATION ---
+        // 3. MILESTONE VALIDATION
         if (milestone != null) {
             if (!milestone.getAssignedDevs().contains(username)) {
                 ObjectNode error = JsonNodeFactory.instance.objectNode();
@@ -182,7 +170,7 @@ public class AssignTicketCommand implements Command {
             }
         }
 
-        // --- 4. STATUS VALIDATION ---
+        // 4. STATUS VALIDATION
         if (!"OPEN".equals(ticket.getStatus())) {
             ObjectNode error = JsonNodeFactory.instance.objectNode();
             error.put("command", "assignTicket");
@@ -205,9 +193,6 @@ public class AssignTicketCommand implements Command {
 
     /**
      * Checks if a milestone is blocked by other active milestones.
-     *
-     * @param m The milestone to check.
-     * @return True if blocked, false otherwise.
      */
     private boolean isMilestoneBlocked(final Milestone m) {
         for (Milestone other : db.getMilestones()) {

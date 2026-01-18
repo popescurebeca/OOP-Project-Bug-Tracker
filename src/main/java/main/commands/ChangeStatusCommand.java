@@ -15,22 +15,13 @@ public class ChangeStatusCommand implements Command {
     private final Database db;
     private final InputData input;
 
-    /**
-     * Constructor for ChangeStatusCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public ChangeStatusCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
     }
 
-    /**
-     * Executes the change status command.
-     *
-     * @param outputs The list of outputs to append results to.
-     */
+
     @Override
     public void execute(final List<ObjectNode> outputs) {
         String username = input.getUsername();
@@ -75,8 +66,6 @@ public class ChangeStatusCommand implements Command {
                 ticket.setStatus("CLOSED");
                 break;
             default:
-                // If OPEN, theoretically changeStatus shouldn't happen without assign,
-                // but if it happens, we assume it stays or logic is handled elsewhere.
                 break;
         }
 

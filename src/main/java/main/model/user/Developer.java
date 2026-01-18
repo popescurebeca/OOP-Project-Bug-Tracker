@@ -7,6 +7,7 @@ import main.model.user.enums.UserRoles;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Represents a Developer user in the system.
@@ -85,5 +86,10 @@ public final class Developer extends User {
      */
     public void clearNotifications() {
         this.notifications.clear();
+    }
+
+    @Override
+    public Optional<Developer> isDeveloper() {
+        return Optional.of(this);
     }
 }

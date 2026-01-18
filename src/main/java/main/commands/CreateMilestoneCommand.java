@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import main.database.Database;
 import main.model.Milestone;
 import main.model.ticket.Ticket;
+import main.model.user.Developer;
 import main.model.user.User;
 import main.utils.InputData;
 
@@ -19,12 +20,7 @@ public class CreateMilestoneCommand implements Command {
     private final Database db;
     private final InputData input;
 
-    /**
-     * Constructor for CreateMilestoneCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
-     */
+
     public CreateMilestoneCommand(final Database db, final InputData input) {
         this.db = db;
         this.input = input;
@@ -34,16 +30,14 @@ public class CreateMilestoneCommand implements Command {
     public void execute(final List<ObjectNode> outputs) {
         String username = input.getUsername();
 
-        // Determinăm rolul (asigurăm Uppercase pentru mesajul de eroare)
         String role = db.getUserRole(username).toUpperCase();
 
-        // --- EDGE CASE 1: Verificare Permisiuni ---
         if (!"MANAGER".equals(role)) {
             ObjectNode error = JsonNodeFactory.instance.objectNode();
             error.put("command", "createMilestone");
             error.put("username", username);
             error.put("timestamp", input.getTimestamp());
-            // Mesaj exact conform REF
+
             String message = "The user does not have permission "
                     + "to execute this command: required role MANAGER;"
                     + " user role " + role + ".";
@@ -52,7 +46,6 @@ public class CreateMilestoneCommand implements Command {
             return;
         }
 
-        // Extragere date
         String timestamp = input.getTimestamp();
         String name = input.getMilestoneName();
         if (name == null) {
@@ -76,7 +69,6 @@ public class CreateMilestoneCommand implements Command {
             assignedDevs = new ArrayList<>();
         }
 
-        // --- EDGE CASE 2: Conflict Tichete ---
         for (Integer ticketId : tickets) {
             for (Milestone m : db.getMilestones()) {
                 if (m.getTicketIds().contains(ticketId)) {
@@ -84,18 +76,16 @@ public class CreateMilestoneCommand implements Command {
                     error.put("command", "createMilestone");
                     error.put("username", username);
                     error.put("timestamp", timestamp);
-                    // Mesaj exact care preia numele dinamic al milestone-ului existent
                     String message = "Tickets " + ticketId + " already assigned to milestone "
                             + m.getName() + ".";
                     error.put("error", message);
 
                     outputs.add(error);
-                    return; // Stop la prima eroare
+                    return;
                 }
             }
         }
 
-        // Creare și Salvare (doar dacă nu sunt erori)
         Milestone newMilestone = new Milestone(
                 name,
                 username,
@@ -121,9 +111,9 @@ public class CreateMilestoneCommand implements Command {
                 + newMilestone.getDueDate() + ".";
 
         for (String devName : newMilestone.getAssignedDevs()) {
-            User u = db.findUserByUsername(devName);
-            if (u instanceof main.model.user.Developer) {
-                ((main.model.user.Developer) u).addNotification(notifMsg);
+            User user = db.findUserByUsername(devName);
+            if ("DEVELOPER".equals(user.getRole().toString())) {
+                ((Developer) user).addNotification(notifMsg);
             }
         }
     }

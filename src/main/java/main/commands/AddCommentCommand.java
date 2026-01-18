@@ -19,9 +19,6 @@ public class AddCommentCommand implements Command {
 
     /**
      * Constructor for AddCommentCommand.
-     *
-     * @param db    The database instance.
-     * @param input The input data containing command parameters.
      */
     public AddCommentCommand(final Database db, final InputData input) {
         this.db = db;
@@ -30,8 +27,6 @@ public class AddCommentCommand implements Command {
 
     /**
      * Executes the add comment command.
-     *
-     * @param outputs The list of outputs to append results to.
      */
     @Override
     public void execute(final List<ObjectNode> outputs) {
@@ -105,9 +100,6 @@ public class AddCommentCommand implements Command {
 
     /**
      * Adds an error message to the outputs.
-     *
-     * @param outputs The list of outputs.
-     * @param msg     The error message.
      */
     private void addError(final List<ObjectNode> outputs, final String msg) {
         ObjectNode error = JsonNodeFactory.instance.objectNode();

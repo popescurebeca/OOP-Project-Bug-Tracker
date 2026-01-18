@@ -41,28 +41,28 @@ public final class CustomerImpactVisitor implements Visitor {
         countByType.put("UI_FEEDBACK", 0);
     }
 
-    // --- VISIT BUG ---
+    // VISIT BUG
     @Override
     public void visit(final Bug bug) {
         double impact = calculateBugImpact(bug);
         accumulate("BUG", impact);
     }
 
-    // --- VISIT FEATURE REQUEST ---
+    // VISIT FEATURE REQUEST
     @Override
     public void visit(final FeatureRequest fr) {
         double impact = calculateFeatureImpact(fr);
         accumulate("FEATURE_REQUEST", impact);
     }
 
-    // --- VISIT UI FEEDBACK ---
+    // VISIT UI FEEDBACK
     @Override
     public void visit(final UIFeedback ui) {
         double impact = calculateUiImpact(ui);
         accumulate("UI_FEEDBACK", impact);
     }
 
-    // --- CALCULATION LOGIC (Moved from Command) ---
+    // CALCULATION LOGIC
 
     private void accumulate(final String type, final double impact) {
         totalImpactByType.put(type, totalImpactByType.get(type) + impact);
@@ -91,9 +91,8 @@ public final class CustomerImpactVisitor implements Visitor {
         return (double) (businessValue * usability);
     }
 
-    // --- HELPER METHODS FOR VALUES ---
 
-    // 1. Priority (LOW=1, MEDIUM=2, HIGH=3, CRITICAL=4)
+    // 1. Priority
     private int getPriorityValue(final String p) {
         if (p == null) {
             return 1; // Default
@@ -107,7 +106,7 @@ public final class CustomerImpactVisitor implements Visitor {
         };
     }
 
-    // 2. Severity (MINOR=1, MODERATE=2, SEVERE=3)
+    // 2. Severity
     private int getSeverityValue(final String s) {
         if (s == null) {
             return 1;
@@ -120,7 +119,7 @@ public final class CustomerImpactVisitor implements Visitor {
         };
     }
 
-    // 3. Frequency (RARE=1, OCCASIONAL=2, FREQUENT=3, ALWAYS=4)
+    // 3. Frequency
     private int getFrequencyValue(final String f) {
         if (f == null) {
             return 1;
@@ -134,7 +133,7 @@ public final class CustomerImpactVisitor implements Visitor {
         };
     }
 
-    // 4. Business Value (S=1, M=3, L=6, XL=10)
+    // 4. Business Value
     private int getBusinessValue(final String bv) {
         if (bv == null) {
             return 1;
@@ -148,7 +147,7 @@ public final class CustomerImpactVisitor implements Visitor {
         };
     }
 
-    // 5. Customer Demand (LOW=1, MEDIUM=3, HIGH=6, VERY_HIGH=10)
+    // 5. Customer Demand
     private int getCustomerDemandValue(final String cd) {
         if (cd == null) {
             return 1;
@@ -178,7 +177,6 @@ public final class CustomerImpactVisitor implements Visitor {
 
         double avg = totalImpactByType.get(type) / count;
 
-        // Use Math.round for correct precision
         return Math.round(avg * PERCENTAGE_MULTIPLIER) / PERCENTAGE_MULTIPLIER;
     }
 

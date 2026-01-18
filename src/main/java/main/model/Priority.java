@@ -11,30 +11,17 @@ public enum Priority {
 
     private final int value;
 
-    /**
-     * Constructor for Priority.
-     *
-     * @param value The integer value of the priority.
-     */
+
     Priority(final int value) {
         this.value = value;
     }
 
-    /**
-     * Gets the integer value of the priority.
-     *
-     * @return The priority value.
-     */
+
     public int getValue() {
         return value;
     }
 
-    /**
-     * Returns the next higher priority.
-     * LOW -> MEDIUM -> HIGH -> CRITICAL
-     *
-     * @return The next priority level.
-     */
+
     public Priority next() {
         switch (this) {
             case LOW:

@@ -33,10 +33,6 @@ public final class Manager extends User {
         return subordinates;
     }
 
-    public void setSubordinates(final List<String> subordinates) {
-        this.subordinates = subordinates;
-    }
-
     public LocalDate getHireDate() {
         return hireDate;
     }
